@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小说世界模拟器</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<nav class="navbar">
+    <div class="nav-brand" onclick="goHome()">小说模拟器</div>
+    <div class="nav-links" id="nav-links">
+        <a class="nav-link active" data-page="home" onclick="showPage('home')">我的故事</a>
+        <a class="nav-link" data-page="settings" onclick="showPage('settings')">设定</a>
+        <a class="nav-link" data-page="story" onclick="showPage('story')">写作</a>
+    </div>
+    <div class="nav-right">
+        <div class="nav-status" id="ai-status-bar" onclick="toggleApiPanel()">
+            <span class="status-dot offline" id="ai-dot"></span>
+            <span id="ai-status-text">未连接</span>
+        </div>
+    </div>
+</nav>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden"></div>
+<!-- Loading -->
+<div id="global-loading" class="global-loading hidden">
+    <div class="loading-box"><div class="loading-spinner"></div><p id="loading-text">加载中...</p></div>
+</div>
+
+<!-- ==================== 首页 ==================== -->
+<div id="page-home" class="page active">
+    <div class="container">
+
+        <!-- API 连接 -->
+        <div class="card api-card" id="api-card">
+            <h3>连接 AI</h3>
+            <div class="form-group">
+                <label>API Key</label>
+                <div class="form-row">
+                    <input type="password" id="api-key-input" placeholder="粘贴你的 API Key" class="input flex-1">
+                    <button onclick="connectAI()" class="btn btn-primary">连接</button>
+                </div>
+            </div>
+            <div class="form-row" style="margin-top:8px">
+                <select id="provider-select" class="input input-sm" style="width:120px" onchange="S.provider=this.value">
+                    <option value="xiaomi">小米 MiMo</option>
+                    <option value="claude">Claude</option>
+                </select>
+                <button onclick="toggleAdvanced()" class="btn btn-ghost btn-sm">高级设置</button>
+            </div>
+            <div id="advanced-settings" class="hidden" style="margin-top:10px">
+                <div class="form-row">
+                    <div class="form-group flex-1"><label>API 地址</label><input type="text" id="api-url" value="https://token-plan-cn.xiaomimimo.com/v1" class="input"></div>
+                    <div class="form-group flex-1"><label>模型</label><input type="text" id="api-model" value="MiMo-V2.5-Pro" class="input"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 快速开始 -->
+        <div class="card" id="quick-start-card">
+            <h3>快速开始</h3>
+            <p class="text-dim">选一个题材，AI 自动生成全部设定</p>
+            <div class="genre-grid" id="genre-grid"></div>
+        </div>
+
+        <!-- 我的故事 -->
+        <div class="section-header">
+            <h2>我的故事</h2>
+            <button onclick="showCreateModal()" class="btn btn-primary">+ 新故事</button>
+        </div>
+        <div id="story-list" class="story-grid"></div>
+    </div>
+</div>
+
+<!-- 创建故事弹窗 -->
+<div id="create-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>创建新故事</h3>
+        <div class="form-group"><label>标题</label><input type="text" id="new-title" placeholder="给故事起个名字" class="input"></div>
+        <div class="form-group"><label>简介（可选）</label><textarea id="new-desc" placeholder="一句话描述..." rows="2" class="input"></textarea></div>
+        <div class="form-group"><label>分类（可选）</label><input type="text" id="new-category" placeholder="修仙、都市、言情..." class="input"></div>
+        <div class="modal-actions"><button onclick="closeModal('create-modal')" class="btn btn-ghost">取消</button><button onclick="createStory()" class="btn btn-primary">创建</button></div>
+    </div>
+</div>
+
+<!-- 重命名弹窗 -->
+<div id="rename-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>重命名</h3>
+        <div class="form-group"><label>新标题</label><input type="text" id="rename-title" class="input"></div>
+        <div class="modal-actions"><button onclick="closeModal('rename-modal')" class="btn btn-ghost">取消</button><button onclick="confirmRename()" class="btn btn-primary">确定</button></div>
+    </div>
+</div>
+
+<!-- ==================== 设定页 ==================== -->
+<div id="page-settings" class="page">
+    <div class="container">
+        <h2 id="settings-title">故事设定</h2>
+
+        <!-- 1. 故事大纲（首位） -->
+        <div class="section-block">
+            <div class="section-title" onclick="toggleSection('sec-outline')">
+                <span>故事大纲</span>
+                <span class="toggle-arrow" id="arrow-sec-outline">&#9660;</span>
+            </div>
+            <div id="sec-outline" class="section-body">
+                <!-- 输入区 -->
+                <div class="form-group"><label>故事主题</label><textarea id="outline-theme" rows="2" class="input" placeholder="如：少年从底层崛起，踏上修仙巅峰"></textarea></div>
+                <div class="form-group"><label>核心冲突</label><textarea id="outline-conflict" rows="2" class="input" placeholder="如：与天道的对抗，身世之谜的揭露"></textarea></div>
+                <div class="form-group">
+                    <label>结局方向</label>
+                    <div class="ending-type-row">
+                        <select id="outline-ending-type" class="input input-sm" style="width:140px" onchange="$('outline-ending').value=this.value">
+                            <option value="">选择类型</option>
+                            <option value="开放式结局">开放式</option>
+                            <option value="大团圆HE">大团圆HE</option>
+                            <option value="遗憾BE">遗憾BE</option>
+                            <option value="复仇成功">复仇成功</option>
+                            <option value="逆袭翻盘">逆袭翻盘</option>
+                            <option value="悲剧英雄">悲剧英雄</option>
+                        </select>
+                        <input type="text" id="outline-ending" class="input flex-1" placeholder="或自定义结局描述">
+                    </div>
+                </div>
+                <!-- AI 生成按钮 -->
+                <div style="display:flex;gap:8px;margin-bottom:16px">
+                    <button onclick="generateOutline()" id="btn-gen-outline" class="btn btn-primary">AI 生成大纲</button>
+                    <button onclick="resetOutline()" class="btn btn-ghost btn-sm">重置</button>
+                </div>
+                <!-- 大纲预览/编辑区 -->
+                <div id="outline-display" class="outline-display"></div>
+            </div>
+        </div>
+
+        <!-- 2. 人物设定 -->
+        <div class="section-block">
+            <div class="section-title" onclick="toggleSection('sec-chars')">
+                <span>人物设定</span>
+                <span class="toggle-arrow" id="arrow-sec-chars">&#9660;</span>
+            </div>
+            <div id="sec-chars" class="section-body">
+                <div id="character-list"></div>
+                <button onclick="addCharacter()" class="btn btn-add">+ 添加人物</button>
+            </div>
+        </div>
+
+        <!-- 3. 世界观 -->
+        <div class="section-block">
+            <div class="section-title" onclick="toggleSection('sec-world')">
+                <span>世界观</span>
+                <span class="toggle-arrow" id="arrow-sec-world">&#9660;</span>
+            </div>
+            <div id="sec-world" class="section-body">
+                <div class="form-group"><label>世界名称</label><input type="text" id="world-name" class="input" onchange="autoSaveWorld()"></div>
+                <div class="form-group"><label>时代背景</label><textarea id="world-era" rows="2" class="input" onchange="autoSaveWorld()"></textarea></div>
+                <div class="form-group"><label>核心规则</label><textarea id="world-rules" rows="3" class="input" onchange="autoSaveWorld()"></textarea></div>
+                <div class="form-group"><label>地理设定</label><textarea id="world-geography" rows="2" class="input" onchange="autoSaveWorld()"></textarea></div>
+            </div>
+        </div>
+
+        <!-- 4. 势力阵营 -->
+        <div class="section-block">
+            <div class="section-title" onclick="toggleSection('sec-factions')">
+                <span>势力阵营</span>
+                <span class="toggle-arrow" id="arrow-sec-factions">&#9660;</span>
+            </div>
+            <div id="sec-factions" class="section-body">
+                <div id="faction-list"></div>
+                <button onclick="addFaction()" class="btn btn-add">+ 添加势力</button>
+            </div>
+        </div>
+
+        <!-- 5. 道具法宝 -->
+        <div class="section-block">
+            <div class="section-title" onclick="toggleSection('sec-items')">
+                <span>道具法宝</span>
+                <span class="toggle-arrow" id="arrow-sec-items">&#9660;</span>
+            </div>
+            <div id="sec-items" class="section-body">
+                <div id="item-list"></div>
+                <button onclick="addItem()" class="btn btn-add">+ 添加道具</button>
+            </div>
+        </div>
+
+        <!-- 底部操作 -->
+        <div class="settings-footer">
+            <button onclick="previewAll()" class="btn btn-ghost">预览全部设定</button>
+            <button onclick="copyPreview()" class="btn btn-ghost">复制全部设定</button>
+            <button onclick="showPage('story')" class="btn btn-primary">去写作</button>
+        </div>
+    </div>
+</div>
+
+<!-- 预览全部设定弹窗 -->
+<div id="preview-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:650px">
+        <h3>全部设定预览</h3>
+        <div id="preview-all-content" class="preview-panel" style="max-height:60vh"></div>
+        <div class="modal-actions">
+            <button onclick="copyAllPreview()" class="btn btn-ghost">复制</button>
+            <button onclick="closeModal('preview-modal')" class="btn btn-primary">关闭</button>
+        </div>
+    </div>
+</div>
+
+<!-- ==================== 写作页 ==================== -->
+<div id="page-story" class="page">
+    <div class="page-story-wrap">
+        <!-- 顶部栏：文风 + 视角 + 设置按钮 -->
+        <div class="story-topbar">
+            <div class="topbar-left">
+                <h2 id="story-reading-title">故事</h2>
+                <span class="text-dim" id="story-chapter-count"></span>
+            </div>
+            <div class="topbar-right">
+                <select id="writing-style" class="input input-sm" onchange="saveStoryConfig()">
+                    <option value="default">默认风格</option><option value="爽文">爽文</option><option value="古风">古风</option>
+                    <option value="甜宠">甜宠</option><option value="悬疑">悬疑</option><option value="写实">写实</option>
+                    <option value="沙雕">沙雕</option><option value="暗黑">暗黑</option>
+                </select>
+                <select id="perspective" class="input input-sm" onchange="saveStoryConfig()">
+                    <option value="第三人称">第三人称</option><option value="第一人称">第一人称</option>
+                </select>
+                <button class="btn-gear" onclick="toggleSidebar()" title="更多设置">&#9881;</button>
+            </div>
+        </div>
+
+        <!-- 核心创作区 -->
+        <div class="story-main">
+            <!-- 章节内容 -->
+            <div id="story-content" class="story-chapters">
+                <div class="empty-state"><p>还没有章节</p><p class="hint">先去「设定」创建人物，然后在下方输入指令开始写作</p></div>
+            </div>
+
+            <!-- 创作指令区 -->
+            <div class="story-compose">
+                <div class="quick-tags">
+                    <span class="cmd-tag" onclick="fillCommand('让主角陷入危机')">主角危机</span>
+                    <span class="cmd-tag" onclick="fillCommand('触发人物冲突')">人物冲突</span>
+                    <span class="cmd-tag" onclick="fillCommand('推进日常剧情')">日常推进</span>
+                    <span class="cmd-tag" onclick="fillCommand('增加感情戏')">感情戏</span>
+                    <span class="cmd-tag" onclick="fillCommand('触发奇遇')">奇遇</span>
+                    <span class="cmd-tag" onclick="fillCommand('推进主线')">推进主线</span>
+                </div>
+                <div class="compose-row">
+                    <textarea id="advance-instruction" class="compose-input" rows="1" placeholder="给 AI 一句话指示，或留空让它自由发挥..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();advanceStory()}"></textarea>
+                    <button onclick="advanceStory()" id="btn-advance" class="btn-write">写下一章</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部对话栏（折叠） -->
+        <div class="story-chat-bar">
+            <div class="chat-bar-title" onclick="toggleChatBar()">
+                <span class="arrow" id="chat-arrow">&#9654;</span>
+                <span>和角色对话</span>
+            </div>
+            <div class="chat-bar-body" id="chat-bar-body">
+                <div class="chat-panel">
+                    <div class="chat-header">
+                        <select id="chat-character" class="input input-sm"><option value="">选择角色</option></select>
+                        <input type="text" id="chat-scene" class="input input-sm" placeholder="场景，如：在酒馆里">
+                    </div>
+                    <div id="chat-messages" class="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <input type="text" id="chat-input" class="input" placeholder="说点什么..." onkeydown="if(event.key==='Enter')sendChat()">
+                        <button onclick="sendChat()" class="btn btn-primary btn-sm">发送</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧边栏：低频功能 -->
+    <div class="story-sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="story-sidebar" id="story-sidebar">
+        <div class="sidebar-header">
+            <h3>更多设置</h3>
+            <button class="sidebar-close" onclick="toggleSidebar()">&times;</button>
+        </div>
+        <div class="sidebar-body">
+            <div class="sidebar-group">
+                <h4>字数设置</h4>
+                <div class="form-group"><label>每章目标字数</label><input type="number" id="target-words" value="2000" class="input input-sm" onchange="saveStoryConfig()"></div>
+            </div>
+            <div class="sidebar-group">
+                <h4>剧情管理</h4>
+                <div class="sidebar-actions">
+                    <button onclick="getChoices()" class="btn btn-ghost btn-sm">剧情分支选择</button>
+                    <button onclick="triggerRandomEvent()" class="btn btn-ghost btn-sm">触发随机事件</button>
+                    <button onclick="showMemoryPanel()" class="btn btn-ghost btn-sm">记忆管理</button>
+                </div>
+            </div>
+            <div class="sidebar-group">
+                <h4>导出备份</h4>
+                <div class="sidebar-actions">
+                    <button onclick="exportStory('txt')" class="btn btn-ghost btn-sm">导出 TXT</button>
+                    <button onclick="exportStory('markdown')" class="btn btn-ghost btn-sm">导出 Markdown</button>
+                    <button onclick="exportAll()" class="btn btn-ghost btn-sm">备份全部数据</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 剧情分支弹窗 -->
+<div id="choices-modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>选择剧情走向</h3>
+        <div id="choices-list"></div>
+        <div class="modal-actions"><button onclick="closeModal('choices-modal')" class="btn btn-ghost">取消</button></div>
+    </div>
+</div>
+
+<!-- 记忆管理弹窗 -->
+<div id="memory-modal" class="modal hidden">
+    <div class="modal-content" style="max-width:600px">
+        <h3>记忆管理</h3>
+        <div class="form-group"><label>故事摘要</label><textarea id="memory-summary" rows="4" class="input" placeholder="每5章自动生成"></textarea></div>
+        <div class="form-group"><label>当前世界状态</label><textarea id="memory-state" rows="3" class="input"></textarea></div>
+        <div class="form-group"><label>快照存档</label><div id="snapshots-list"></div></div>
+        <div class="modal-actions">
+            <button onclick="createSnapshot()" class="btn btn-ghost">创建快照</button>
+            <button onclick="saveMemoryEdits()" class="btn btn-primary">保存</button>
+            <button onclick="closeModal('memory-modal')" class="btn btn-ghost">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
