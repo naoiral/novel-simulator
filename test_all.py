@@ -246,7 +246,7 @@ checks = [
     ("affinity_map" in json.dumps(chars), "关系网数据"),
     ("sidebar-nav", "左侧导航栏"),
     ("api-modal", "AI连接弹窗"),
-    ("chat-panel-bar", "角色对话面板"),
+    ("chat-modal", "角色对话弹窗"),
     ('src="/static/api.js?v=', "api.js 加载"),
     ('src="/static/settings.js?v=', "settings.js 加载"),
     ('src="/static/story.js?v=', "story.js 加载"),

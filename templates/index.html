@@ -301,6 +301,7 @@
 <!-- API 连接 -->
 <div id="api-modal" class="modal hidden" onclick="if(event.target===this)closeModal('api-modal')">
     <div class="modal-content" style="max-width:400px">
+        <button class="modal-close" onclick="closeModal('api-modal')">✕</button>
         <h3 style="margin-bottom:14px">连接 AI</h3>
         <div class="form-group"><label>API Key</label><input type="password" id="api-key-input" placeholder="粘贴你的 API Key" class="input"></div>
         <div class="form-row">
@@ -321,6 +322,7 @@
 <!-- 创建故事 -->
 <div id="create-modal" class="modal hidden" onclick="if(event.target===this)closeModal('create-modal')">
     <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
         <h3 style="margin-bottom:14px">创建新故事</h3>
         <div class="form-group"><label>标题</label><input type="text" id="new-title" placeholder="给故事起个名字" class="input"></div>
         <div class="form-group"><label>简介（可选）</label><textarea id="new-desc" placeholder="一句话描述..." rows="2" class="input"></textarea></div>
@@ -332,6 +334,7 @@
 <!-- 重命名 -->
 <div id="rename-modal" class="modal hidden" onclick="if(event.target===this)closeModal('rename-modal')">
     <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('rename-modal')">✕</button>
         <h3 style="margin-bottom:14px">重命名</h3>
         <div class="form-group"><label>新标题</label><input type="text" id="rename-title" class="input"></div>
         <div class="modal-actions"><button onclick="closeModal('rename-modal')" class="btn btn-ghost">取消</button><button onclick="confirmRename()" class="btn btn-primary">确定</button></div>
@@ -341,6 +344,7 @@
 <!-- 预览 -->
 <div id="preview-modal" class="modal hidden" onclick="if(event.target===this)closeModal('preview-modal')">
     <div class="modal-content" style="max-width:600px">
+        <button class="modal-close" onclick="closeModal('preview-modal')">✕</button>
         <h3 style="margin-bottom:14px">全部设定预览</h3>
         <div id="preview-all-content" class="preview-panel" style="max-height:55vh"></div>
         <div class="modal-actions"><button onclick="copyAllPreview()" class="btn btn-ghost">复制</button><button onclick="closeModal('preview-modal')" class="btn btn-primary">关闭</button></div>
@@ -350,6 +354,7 @@
 <!-- 剧情分支 -->
 <div id="choices-modal" class="modal hidden" onclick="if(event.target===this)closeModal('choices-modal')">
     <div class="modal-content">
+        <button class="modal-close" onclick="closeModal('choices-modal')">✕</button>
         <h3 style="margin-bottom:14px">选择剧情走向</h3>
         <div id="choices-list"></div>
         <div class="modal-actions"><button onclick="closeModal('choices-modal')" class="btn btn-ghost">取消</button></div>
@@ -359,6 +364,7 @@
 <!-- 记忆管理 -->
 <div id="memory-modal" class="modal hidden" onclick="if(event.target===this)closeModal('memory-modal')">
     <div class="modal-content" style="max-width:560px">
+        <button class="modal-close" onclick="closeModal('memory-modal')">✕</button>
         <h3 style="margin-bottom:14px">记忆管理</h3>
         <div class="form-group"><label>故事摘要</label><textarea id="memory-summary" rows="4" class="input" placeholder="每5章自动生成"></textarea></div>
         <div class="form-group"><label>当前世界状态</label><textarea id="memory-state" rows="3" class="input"></textarea></div>
@@ -374,6 +380,7 @@
 <!-- 关系图 -->
 <div id="relation-modal" class="modal hidden" onclick="if(event.target===this)closeModal('relation-modal')">
     <div class="modal-content" style="max-width:580px">
+        <button class="modal-close" onclick="closeModal('relation-modal')">✕</button>
         <h3 style="margin-bottom:14px">人物关系图</h3>
         <div id="relation-graph" style="display:flex;justify-content:center;padding:8px 0"></div>
         <div class="modal-actions"><button onclick="closeModal('relation-modal')" class="btn btn-primary">关闭</button></div>
@@ -383,6 +390,7 @@
 <!-- 角色对话 -->
 <div id="chat-modal" class="modal hidden" onclick="if(event.target===this)closeModal('chat-modal')">
     <div class="modal-content" style="max-width:480px;max-height:80vh;display:flex;flex-direction:column">
+        <button class="modal-close" onclick="closeModal('chat-modal')">✕</button>
         <h3 style="margin-bottom:6px">💬 角色对话</h3>
         <p style="font-size:11px;color:var(--text3);margin-bottom:12px">和故事中的角色聊天，角色会按设定的性格和语气回复你。可以用来探索角色性格、测试对话风格。</p>
         <div style="display:flex;gap:6px;margin-bottom:10px">
@@ -400,6 +408,7 @@
 <!-- 剧情线图 -->
 <div id="plot-modal" class="modal hidden" onclick="if(event.target===this)closeModal('plot-modal')">
     <div class="modal-content" style="max-width:800px;max-height:85vh">
+        <button class="modal-close" onclick="closeModal('plot-modal')">✕</button>
         <h3 style="margin-bottom:14px">剧情线图</h3>
         <div id="plot-tree-container" style="overflow:auto;max-height:65vh;padding:8px"></div>
         <div class="modal-actions"><button onclick="closeModal('plot-modal')" class="btn btn-primary">关闭</button></div>
