@@ -241,6 +241,7 @@
                         <button class="toolbar-btn" onclick="getChoices()"><span class="toolbar-btn-icon">🔀</span>剧情分支</button>
                         <button class="toolbar-btn" onclick="triggerRandomEvent()"><span class="toolbar-btn-icon">🎲</span>随机事件</button>
                         <button class="toolbar-btn" onclick="showMemoryPanel()"><span class="toolbar-btn-icon">🧠</span>记忆管理</button>
+                        <button class="toolbar-btn" onclick="openChatModal()"><span class="toolbar-btn-icon">💬</span>角色对话</button>
                     </div>
                     <div class="toolbar-divider"></div>
                     <div class="toolbar-group">
@@ -289,24 +290,6 @@
                         </div>
                     </div>
 
-                    <!-- 角色对话（折叠面板） -->
-                    <div class="chat-panel-bar" onclick="toggleChatPanel()">
-                        <span class="chat-panel-arrow" id="chat-panel-arrow">▶</span>
-                        <span>💬 和角色对话</span>
-                    </div>
-                    <div class="chat-panel-body" id="chat-panel-body">
-                        <div class="chat-panel-inner">
-                            <div class="chat-panel-controls">
-                                <select id="chat-character" class="input input-sm" style="width:110px"><option value="">选择角色</option></select>
-                                <input type="text" id="chat-scene" class="input input-sm" placeholder="场景" style="flex:1">
-                            </div>
-                            <div id="chat-messages" class="chat-messages"></div>
-                            <div class="chat-input-row">
-                                <input type="text" id="chat-input" class="input input-sm" placeholder="说点什么..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1">
-                                <button onclick="sendChat()" class="btn btn-primary btn-sm">发送</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -394,6 +377,23 @@
         <h3 style="margin-bottom:14px">人物关系图</h3>
         <div id="relation-graph" style="display:flex;justify-content:center;padding:8px 0"></div>
         <div class="modal-actions"><button onclick="closeModal('relation-modal')" class="btn btn-primary">关闭</button></div>
+    </div>
+</div>
+
+<!-- 角色对话 -->
+<div id="chat-modal" class="modal hidden" onclick="if(event.target===this)closeModal('chat-modal')">
+    <div class="modal-content" style="max-width:480px;max-height:80vh;display:flex;flex-direction:column">
+        <h3 style="margin-bottom:6px">💬 角色对话</h3>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:12px">和故事中的角色聊天，角色会按设定的性格和语气回复你。可以用来探索角色性格、测试对话风格。</p>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+            <select id="chat-character" class="input input-sm" style="width:120px"><option value="">选择角色</option></select>
+            <input type="text" id="chat-scene" class="input input-sm" placeholder="场景，如：在酒馆里" style="flex:1">
+        </div>
+        <div id="chat-messages" class="chat-messages" style="flex:1;min-height:200px"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+            <input type="text" id="chat-input" class="input input-sm" placeholder="说点什么..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1">
+            <button onclick="sendChat()" class="btn btn-primary btn-sm">发送</button>
+        </div>
     </div>
 </div>
 

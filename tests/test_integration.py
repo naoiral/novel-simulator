@@ -358,4 +358,4 @@ class TestFrontend:
         html = urlopen(f"{server}/", timeout=5).read().decode()
         assert "btn-advance" in html or "btn-write" in html
         assert "story-toolbar" in html
-        assert "chat-panel-bar" in html
+        assert "chat-modal" in html

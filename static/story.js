@@ -226,11 +226,11 @@ function toggleQuickTags() {
     arrow.style.transform = tags.classList.contains("open") ? "rotate(90deg)" : "";
 }
 
-function toggleChatPanel() {
-    const body = $("chat-panel-body");
-    const arrow = $("chat-panel-arrow");
-    body.classList.toggle("open");
-    arrow.classList.toggle("open");
+function openChatModal() {
+    $("chat-messages").innerHTML = "";
+    $("chat-input").value = "";
+    openModal("chat-modal");
+    setTimeout(() => $("chat-input").focus(), 100);
 }
 
 async function saveStoryConfig() {
@@ -335,25 +335,38 @@ async function restoreSnap(id) {
 async function exportStory(fmt) {
     try {
         const d = await api(`/api/stories/${S.storyId}/export?format=${fmt}`);
+        const fileName = `${$("story-reading-title").textContent}.${fmt === "txt" ? "txt" : "md"}`;
         const blob = new Blob([d.content], { type: "text/plain;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `${$("story-reading-title").textContent}.${fmt === "txt" ? "txt" : "md"}`;
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
         a.click();
-        toast("导出成功", "success");
-    } catch (e) { toast("导出失败", "error"); }
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        // 同时复制到剪贴板
+        try { await navigator.clipboard.writeText(d.content); } catch(e) {}
+        toast(`已下载 ${fileName}，内容也复制到了剪贴板`, "success");
+    } catch (e) { toast("导出失败: " + e.message, "error"); }
 }
 
 async function exportAll() {
     try {
         const d = await api(`/api/stories/${S.storyId}/export/all`);
-        const blob = new Blob([JSON.stringify(d, null, 2)], { type: "application/json" });
+        const fileName = `backup_${S.storyId}.json`;
+        const content = JSON.stringify(d, null, 2);
+        const blob = new Blob([content], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `backup_${S.storyId}.json`;
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
         a.click();
-        toast("备份成功", "success");
-    } catch(e){ toast("失败", "error"); }
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast(`已下载 ${fileName}`, "success");
+    } catch(e){ toast("备份失败: " + e.message, "error"); }
 }
 
 /* ========== Markdown 渲染 ========== */
