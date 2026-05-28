@@ -123,8 +123,8 @@ function restoreAIConfig() {
 
 /* ========== 题材 ========== */
 const GENRE_ICONS = {
-    "修仙":"🏔️","玄幻":"⚔️","武侠":"🗡️","都市":"🏙️","言情":"💕","穿越":"🌀",
-    "科幻":"🚀","末世":"🧟","悬疑":"🔍","宫斗":"👑","校园":"🎓","无限流":"♾️","游戏":"🎮","盗墓":"🪦"
+    "修仙":"🧙","宫斗":"👑","悬疑":"🔎","无限流":"🌀","末世":"😷","校园":"🎒",
+    "武侠":"⚔️","游戏":"🎮","玄幻":"📖","盗墓":"⛏️","科幻":"🚀","穿越":"⏰","言情":"💌","都市":"🏙️"
 };
 
 async function loadGenreTemplates() {
@@ -174,10 +174,10 @@ async function loadStories() {
         // 主内容区表格
         if (!stories.length) {
             wrap.innerHTML = `<div class="home-empty">
-                <div class="home-empty-icon">✦</div>
+                <div class="home-empty-icon">🐱</div>
                 <div class="home-empty-title">开始你的创作之旅</div>
-                <div class="home-empty-desc">在左侧选择一个题材快速开始，或者点击「+ 新故事」从零开始</div>
-                <div><button onclick="showCreateModal()" class="btn btn-primary">+ 新故事</button></div>
+                <div class="home-empty-desc">在左侧选择一个题材快速开始，或者点击下方按钮从零开始</div>
+                <div><button onclick="showCreateModal()" class="btn btn-primary" style="transform:scale(1.1)">+ 新故事</button></div>
             </div>`;
             return;
         }
