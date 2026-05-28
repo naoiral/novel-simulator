@@ -3,9 +3,18 @@
 import os
 import json
 import shutil
+import threading
+import uuid
+import logging
 from flask import Flask, request, jsonify, send_from_directory
 from story_engine import StoryEngine
 from ai_engine import AIEngine, WRITING_STYLES
+
+logger = logging.getLogger(__name__)
+
+# 异步任务队列
+_tasks = {}  # task_id -> {"status": "running"|"done"|"error", "result": ..., "error": ...}
+_tasks_lock = threading.Lock()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "stories")
@@ -221,18 +230,39 @@ def save_items(story_id):
     return jsonify({"ok": True})
 
 
-# ========== 故事推进 ==========
+# ========== 故事推进（异步） ==========
 
 @app.route("/api/stories/<story_id>/advance", methods=["POST"])
 def advance_story(story_id):
     if not ai_engine.is_ready():
         return jsonify({"error": "请先设置 API Key"}), 400
     data = request.json or {}
-    engine = get_engine(story_id)
-    result = engine.advance(data.get("instruction", ""), data.get("branch_choice"))
-    if "error" in result:
-        return jsonify(result), 500
-    return jsonify(result)
+    task_id = str(uuid.uuid4())[:8]
+
+    def run():
+        try:
+            engine = get_engine(story_id)
+            result = engine.advance(data.get("instruction", ""), data.get("branch_choice"))
+            with _tasks_lock:
+                _tasks[task_id] = {"status": "done", "result": result}
+        except Exception as e:
+            with _tasks_lock:
+                _tasks[task_id] = {"status": "error", "error": str(e)}
+            logger.exception("AI 生成失败")
+
+    with _tasks_lock:
+        _tasks[task_id] = {"status": "running"}
+    threading.Thread(target=run, daemon=True).start()
+    return jsonify({"task_id": task_id, "status": "running"})
+
+
+@app.route("/api/tasks/<task_id>", methods=["GET"])
+def get_task_status(task_id):
+    with _tasks_lock:
+        task = _tasks.get(task_id)
+    if not task:
+        return jsonify({"error": "任务不存在"}), 404
+    return jsonify(task)
 
 
 @app.route("/api/stories/<story_id>/choices", methods=["GET"])
@@ -250,13 +280,22 @@ def get_choices(story_id):
 @app.route("/api/stories/<story_id>/chapters", methods=["GET"])
 def get_chapters(story_id):
     engine = get_engine(story_id)
+    all_nums = engine.memory._list_chapters()
+    total = len(all_nums)
+    # 分页参数
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    per_page = min(per_page, 100)  # 上限 100
+    start = (page - 1) * per_page
+    end = start + per_page
+    page_nums = all_nums[start:end]
     chapters = []
-    for num in engine.memory._list_chapters():
+    for num in page_nums:
         content = engine.memory.load_chapter(num)
         meta = engine.memory.load_chapter_meta(num)
         if content:
             chapters.append({"num": num, "content": content, "title": meta.get("title", "") if meta else "", "word_count": meta.get("word_count", 0) if meta else 0})
-    return jsonify({"chapters": chapters})
+    return jsonify({"chapters": chapters, "total": total, "page": page, "per_page": per_page, "has_more": end < total})
 
 
 @app.route("/api/stories/<story_id>/chapters/<int:chapter_num>", methods=["DELETE"])

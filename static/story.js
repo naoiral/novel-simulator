@@ -29,30 +29,62 @@ async function loadStoryPage() {
     } catch (e) { toast("加载失败: " + e.message, "error"); }
 }
 
-async function loadChapters() {
+let chapterPage = 1;
+let chapterHasMore = false;
+let chapterTotal = 0;
+
+async function loadChapters(reset = true) {
     try {
-        const d = await api(`/api/stories/${S.storyId}/chapters`);
+        if (reset) chapterPage = 1;
+        const d = await api(`/api/stories/${S.storyId}/chapters?page=${chapterPage}&per_page=20`);
         const c = $("story-content");
         const nav = $("chapter-nav-list");
+        chapterHasMore = d.has_more;
+        chapterTotal = d.total;
+
         if (!d.chapters || !d.chapters.length) {
             c.innerHTML = '<div class="empty-state"><p>还没有章节</p><p class="hint">在下方输入指令，点「写下一章」开始</p></div>';
             if (nav) nav.innerHTML = '';
             return;
         }
-        c.innerHTML = d.chapters.map(ch => `<div class="chapter" id="chapter-${ch.num}">
+
+        const chaptersHtml = d.chapters.map(ch => `<div class="chapter" id="chapter-${ch.num}">
             <div class="chapter-toolbar">
                 <button class="btn btn-ghost btn-sm" onclick="rewriteChapter(${ch.num})" title="重写本章">重写</button>
                 <button class="btn btn-danger btn-sm" onclick="deleteChapter(${ch.num})" title="删除本章">删除</button>
             </div>
             ${renderMD(ch.content)}
         </div>`).join("");
-        // 更新章节导航
-        if (nav) {
-            nav.innerHTML = d.chapters.map(ch =>
-                `<div class="chapter-nav-item" onclick="scrollToChapter(${ch.num})">第${ch.num}章 ${esc(ch.title || '')}</div>`
-            ).join('');
+
+        if (reset) {
+            c.innerHTML = (d.has_more ? `<div id="load-more-chapters" style="text-align:center;padding:16px"><button class="btn btn-ghost btn-sm" onclick="loadMoreChapters()">加载更早的章节</button></div>` : "") + chaptersHtml;
+        } else {
+            // 追加到已有内容前面（更早的章节）
+            const loadMore = $("load-more-chapters");
+            if (loadMore) loadMore.insertAdjacentHTML("afterend", chaptersHtml);
+            else c.insertAdjacentHTML("afterbegin", chaptersHtml);
+            // 更新"加载更多"按钮
+            if (!d.has_more && loadMore) loadMore.remove();
+        }
+
+        // 更新章节导航（全量）
+        if (reset) {
+            const allNums = d.chapters.map(ch => ch.num);
+            // 如果有更多章节，用 total 生成完整导航
+            if (nav) {
+                const navHtml = [];
+                for (let i = d.total; i >= 1; i--) {
+                    navHtml.push(`<div class="chapter-nav-item" onclick="scrollToChapter(${i})">第${i}章</div>`);
+                }
+                nav.innerHTML = navHtml.join('');
+            }
         }
     } catch (e) { toast("加载章节失败: " + e.message, "error"); }
+}
+
+function loadMoreChapters() {
+    chapterPage++;
+    loadChapters(false);
 }
 
 function scrollToChapter(num) {
@@ -91,39 +123,49 @@ async function rewriteChapter(num) {
     btn.disabled = false; hideLoading();
 }
 
-let currentAbort = null;
+let _advanceCancelled = false;
 
 async function advanceStory() {
     const btn = $("btn-advance");
     const input = $("advance-instruction");
     btn.disabled = true;
+    _advanceCancelled = false;
     showLoading("AI 正在写... <button class='btn btn-danger btn-sm' onclick='cancelGeneration()' style='margin-left:8px'>取消</button>");
-    currentAbort = new AbortController();
     try {
-        const result = await api(`/api/stories/${S.storyId}/advance`, {
+        // 1. 启动异步任务
+        const { task_id } = await api(`/api/stories/${S.storyId}/advance`, {
             method: "POST",
             body: JSON.stringify({ instruction: input.value.trim() }),
-            signal: currentAbort.signal,
         });
-        if (result.error) toast("失败: " + result.error, "error");
-        else {
+        // 2. 轮询任务状态
+        let result;
+        while (true) {
+            if (_advanceCancelled) { toast("已取消生成", "info"); break; }
+            await new Promise(r => setTimeout(r, 1500));
+            if (_advanceCancelled) { toast("已取消生成", "info"); break; }
+            const task = await api(`/api/tasks/${task_id}`);
+            if (task.status === "done") { result = task.result; break; }
+            if (task.status === "error") { toast("生成失败: " + task.error, "error"); break; }
+        }
+        // 3. 处理结果
+        if (result && !result.error) {
             toast(`第${result.chapter_num}章「${result.chapter_title}」完成`, "success");
             input.value = "";
             autoResizeInput(input);
             await loadChapters();
             const chapters = document.querySelectorAll(".chapter");
             if (chapters.length) chapters[chapters.length - 1].scrollIntoView({ behavior: "smooth" });
+        } else if (result && result.error) {
+            toast("生成失败: " + result.error, "error");
         }
     } catch (e) {
-        if (e.name === "AbortError") toast("已取消生成", "info");
-        else toast("失败: " + e.message, "error");
+        toast("失败: " + e.message, "error");
     }
-    currentAbort = null;
     btn.disabled = false; hideLoading();
 }
 
 function cancelGeneration() {
-    if (currentAbort) currentAbort.abort();
+    _advanceCancelled = true;
 }
 
 function autoResizeInput(el) {
