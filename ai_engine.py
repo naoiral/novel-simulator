@@ -2,6 +2,11 @@
 
 import json
 import os
+import re
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
 
 try:
     import anthropic
@@ -18,7 +23,7 @@ except ImportError:
 DEFAULT_CONFIG = {
     "provider": "xiaomi",
     "xiaomi_base_url": "https://token-plan-cn.xiaomimimo.com/v1",
-    "xiaomi_model": "MiMo-V2.5-Pro",
+    "xiaomi_model": "mimo-v2.5-pro",
     "claude_model": "claude-sonnet-4-20250514",
 }
 
@@ -35,10 +40,14 @@ WRITING_STYLES = {
 
 
 class AIEngine:
+    CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", ".ai_config.json")
+
     def __init__(self, api_key=None):
         self.api_key = api_key or ""
         self.provider = DEFAULT_CONFIG["provider"]
         self.client = None
+        self._lock = threading.Lock()
+        self._load_saved_config()
 
     def is_ready(self):
         return self.client is not None and bool(self.api_key)
@@ -56,7 +65,34 @@ class AIEngine:
                 return False, "未安装 anthropic 库"
             self.client = anthropic.Anthropic(api_key=api_key)
             self.model = model or DEFAULT_CONFIG["claude_model"]
+        self._save_config()
         return True, "ok"
+
+    def _save_config(self):
+        try:
+            os.makedirs(os.path.dirname(self.CONFIG_PATH), exist_ok=True)
+            with open(self.CONFIG_PATH, "w", encoding="utf-8") as f:
+                json.dump({
+                    "provider": self.provider,
+                    "api_key": self.api_key,
+                    "model": getattr(self, "model", ""),
+                }, f, ensure_ascii=False)
+        except Exception:
+            pass
+
+    def _load_saved_config(self):
+        if not os.path.exists(self.CONFIG_PATH):
+            return
+        try:
+            with open(self.CONFIG_PATH, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+            provider = cfg.get("provider", "")
+            api_key = cfg.get("api_key", "")
+            model = cfg.get("model", "")
+            if api_key:
+                self.set_config(provider, api_key, model=model)
+        except Exception:
+            pass
 
     def test_connection(self):
         if not self.is_ready():
@@ -380,13 +416,19 @@ class AIEngine:
 
         genre_templates = {
             "修仙": "修仙世界，灵气复苏，宗门林立，凡人修仙问道",
+            "玄幻": "异世界大陆，斗气魔法，万族林立，热血争霸",
+            "武侠": "江湖武林，内力武功，侠义恩仇，门派纷争",
             "都市": "现代都市，商战职场，都市情感，逆袭人生",
             "言情": "古代/现代言情，甜蜜恋爱，虐恋情深，双向奔赴",
-            "末世": "末日降临，丧尸横行，生存求生，重建文明",
-            "玄幻": "异世界大陆，魔法斗气，种族纷争，称霸天下",
-            "悬疑": "悬疑推理，连环案件，层层反转，真相大白",
+            "穿越": "穿越异世，携带现代知识，改写历史，逆天改命",
             "科幻": "未来科技，星际探索，人工智能，文明碰撞",
-            "历史": "历史架空，宫廷权谋，乱世争霸，改写历史",
+            "末世": "末日降临，丧尸横行，生存求生，重建文明",
+            "悬疑": "悬疑推理，连环案件，层层反转，真相大白",
+            "宫斗": "后宫争宠，步步为营，权力游戏，生存博弈",
+            "校园": "青春校园，成长蜕变，友情爱情，追梦故事",
+            "无限流": "无限副本，生死任务，积分兑换，团队协作",
+            "游戏": "虚拟网游，等级转职，公会争霸，重回巅峰",
+            "盗墓": "古墓探秘，风水秘术，机关陷阱，千年谜团",
         }
 
         genre_desc = genre_templates.get(genre, genre)
@@ -451,19 +493,20 @@ class AIEngine:
     # ========== 内部方法 ==========
 
     def _call_ai(self, prompt, max_tokens=4096):
-        if self.provider == "xiaomi":
-            response = self.client.chat.completions.create(
-                model=self.model, max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.choices[0].message.content
-        elif self.provider == "claude":
-            response = self.client.messages.create(
-                model=self.model, max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.content[0].text
-        raise ValueError(f"未知的 provider: {self.provider}")
+        with self._lock:
+            if self.provider == "xiaomi":
+                response = self.client.chat.completions.create(
+                    model=self.model, max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.choices[0].message.content
+            elif self.provider == "claude":
+                response = self.client.messages.create(
+                    model=self.model, max_tokens=max_tokens,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.content[0].text
+            raise ValueError(f"未知的 provider: {self.provider}")
 
     def _build_chapter_prompt(self, context, user_instruction, target_words, writing_style, perspective):
         characters = context.get("characters", [])
@@ -589,4 +632,12 @@ class AIEngine:
         try:
             return json.loads(text)
         except json.JSONDecodeError:
-            return {"content": raw_text}
+            # 尝试用正则提取第一个完整的 JSON 对象
+            match = re.search(r'\{[\s\S]*\}', text)
+            if match:
+                try:
+                    return json.loads(match.group())
+                except json.JSONDecodeError:
+                    pass
+            logger.warning("JSON 解析失败，原始文本前200字符: %s", raw_text[:200])
+            return {"content": raw_text, "_parse_warning": "AI 返回的内容未能解析为结构化数据"}

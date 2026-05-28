@@ -1,5 +1,5 @@
 """全自动功能测试 — 小说世界模拟器"""
-import json, threading, time
+import json, threading, time, socket
 from urllib.request import urlopen, Request
 from app import app
 
@@ -10,7 +10,19 @@ def run():
 
 t = threading.Thread(target=run, daemon=True)
 t.start()
-time.sleep(2)
+
+def wait_for_port(host, port, timeout=10):
+    """轮询等待端口就绪，比固定 sleep 更可靠。"""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=1):
+                return True
+        except OSError:
+            time.sleep(0.2)
+    raise TimeoutError(f"端口 {port} 在 {timeout}s 内未就绪")
+
+wait_for_port("127.0.0.1", 5010)
 
 def test(name, ok, detail=""):
     results.append((name, ok, detail))
@@ -29,6 +41,11 @@ def api(method, path, data=None):
     return json.loads(r.read().decode())
 
 # ================================================================
+# 清理旧数据
+existing = api("GET", "/api/stories")
+for old in existing.get("stories", []):
+    api("DELETE", f"/api/stories/{old['id']}")
+
 print("\n========== 1. 首页 ==========")
 
 html = urlopen("http://127.0.0.1:5010/", timeout=5).read().decode()
@@ -38,7 +55,7 @@ cfg = api("GET", "/api/config")
 test("API配置读取", cfg.get("ai_ready") is not None)
 
 tpl = api("GET", "/api/templates")
-test("题材模板(5个)", len(tpl["templates"]) == 5, str(list(tpl["templates"].keys())))
+test("题材模板(14个)", len(tpl["templates"]) == 14, str(list(tpl["templates"].keys())))
 
 styles = api("GET", "/api/config/styles")
 test("文风列表(8种)", len(styles["styles"]) >= 8)
@@ -218,17 +235,22 @@ print("\n========== 12. 前端页面验证 ==========")
 
 checks = [
     ("page-story-wrap", "写作页布局"),
-    ("story-sidebar", "右侧边栏"),
+    ("story-toolbar", "工具栏"),
     ("btn-write", "写下一章按钮"),
     ("cmd-tag", "快捷指令标签"),
-    ("toggleSidebar", "边栏切换函数"),
-    ("toggleChatBar", "对话栏切换"),
     ("sec-outline", "大纲板块"),
     ("sec-chars", "人物板块"),
     ("sec-world", "世界观板块"),
     ("preview-modal", "预览弹窗"),
     ("outline-ending-type", "结局类型选择"),
     ("affinity_map" in json.dumps(chars), "关系网数据"),
+    ("sidebar-nav", "左侧导航栏"),
+    ("api-modal", "AI连接弹窗"),
+    ("chat-panel-bar", "角色对话面板"),
+    ('src="/static/api.js?v=', "api.js 加载"),
+    ('src="/static/settings.js?v=', "settings.js 加载"),
+    ('src="/static/story.js?v=', "story.js 加载"),
+    ('src="/static/app.js?v=', "app.js 加载"),
 ]
 for key, name in checks:
     if isinstance(key, str):

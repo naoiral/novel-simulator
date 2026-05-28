@@ -15,6 +15,7 @@ class MemoryManager:
         self.snapshots_dir = os.path.join(story_dir, "snapshots")
         self.chapters_dir = os.path.join(story_dir, "chapters")
         self.dialogues_dir = os.path.join(story_dir, "dialogues")
+        self._pending_writes = None
         os.makedirs(self.chapters_dir, exist_ok=True)
         os.makedirs(self.snapshots_dir, exist_ok=True)
         os.makedirs(self.dialogues_dir, exist_ok=True)
@@ -67,6 +68,17 @@ class MemoryManager:
         if not os.path.exists(path):
             return None
         return self._load_json(path)
+
+    def delete_chapter(self, chapter_num):
+        md_path = os.path.join(self.chapters_dir, f"chapter_{chapter_num:03d}.md")
+        json_path = os.path.join(self.chapters_dir, f"chapter_{chapter_num:03d}.json")
+        deleted = False
+        if os.path.exists(md_path):
+            os.remove(md_path)
+            deleted = True
+        if os.path.exists(json_path):
+            os.remove(json_path)
+        return deleted
 
     def get_recent_chapters(self, count=3):
         chapters = self._list_chapters()
@@ -214,16 +226,40 @@ class MemoryManager:
         if not os.path.exists(path):
             return False
         snapshot = self._load_json(path)
-        # 恢复记忆
-        self._save_json(self.memory_path, snapshot["memory"])
-        self._save_json(self.events_path, {"events": snapshot["events"]})
-        self._save_json(self.foreshadow_path, {"foreshadows": snapshot.get("foreshadows", [])})
-        # 恢复章节
+        # 先备份当前章节，防止恢复失败导致数据丢失
+        backup_dir = os.path.join(self.story_dir, "_restore_backup")
+        os.makedirs(backup_dir, exist_ok=True)
         for f in os.listdir(self.chapters_dir):
-            os.remove(os.path.join(self.chapters_dir, f))
-        for num_str, content in snapshot.get("chapters", {}).items():
-            self.save_chapter(int(num_str), content)
-        return True
+            src = os.path.join(self.chapters_dir, f)
+            dst = os.path.join(backup_dir, f)
+            with open(src, "rb") as fin, open(dst, "wb") as fout:
+                fout.write(fin.read())
+        try:
+            # 恢复记忆
+            self._save_json(self.memory_path, snapshot["memory"])
+            self._save_json(self.events_path, {"events": snapshot["events"]})
+            self._save_json(self.foreshadow_path, {"foreshadows": snapshot.get("foreshadows", [])})
+            # 恢复章节
+            for f in os.listdir(self.chapters_dir):
+                os.remove(os.path.join(self.chapters_dir, f))
+            for num_str, content in snapshot.get("chapters", {}).items():
+                self.save_chapter(int(num_str), content)
+            # 恢复成功，清理备份
+            import shutil
+            shutil.rmtree(backup_dir, ignore_errors=True)
+            return True
+        except Exception:
+            # 恢复失败，从备份还原
+            import shutil
+            for f in os.listdir(self.chapters_dir):
+                os.remove(os.path.join(self.chapters_dir, f))
+            for f in os.listdir(backup_dir):
+                src = os.path.join(backup_dir, f)
+                dst = os.path.join(self.chapters_dir, f)
+                with open(src, "rb") as fin, open(dst, "wb") as fout:
+                    fout.write(fin.read())
+            shutil.rmtree(backup_dir, ignore_errors=True)
+            return False
 
     # ========== 构建 AI 上下文 ==========
 
@@ -306,11 +342,27 @@ class MemoryManager:
                     pass
         return sorted(chapters)
 
+    def begin_batch(self):
+        """开启批量写入模式，后续 _save_json 调用会先缓存到内存。"""
+        self._pending_writes = {}
+
+    def flush(self):
+        """将所有缓冲的写入一次性刷到磁盘。"""
+        for path, data in self._pending_writes.items():
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+        self._pending_writes = {}
+
     def _save_json(self, path, data):
+        if self._pending_writes is not None:
+            self._pending_writes[path] = data
+            return
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
     def _load_json(self, path):
+        if self._pending_writes is not None and path in self._pending_writes:
+            return self._pending_writes[path]
         if not os.path.exists(path):
             return {}
         with open(path, "r", encoding="utf-8") as f:

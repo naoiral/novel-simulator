@@ -107,6 +107,9 @@ class StoryEngine:
     # ========== 推进故事 ==========
 
     def advance(self, user_instruction="", branch_choice=None):
+        # 开启批量写入模式，所有文件修改先缓存在内存，最后一次性刷盘
+        self.memory.begin_batch()
+
         characters = self.get_characters()
         world = self.get_world()
         outline = self.get_outline()
@@ -123,6 +126,7 @@ class StoryEngine:
         )
 
         if "error" in result:
+            self.memory.flush()
             return result
 
         # 保存章节
@@ -178,6 +182,9 @@ class StoryEngine:
         config = self._load_json(self.config_path)
         config["updated_at"] = datetime.now().isoformat()
         self._save_json(self.config_path, config)
+
+        # 一次性将所有缓冲写入刷到磁盘
+        self.memory.flush()
 
         return {
             "chapter_num": next_chapter,
@@ -312,6 +319,17 @@ class StoryEngine:
 
     # ========== 内部方法 ==========
 
+    @staticmethod
+    def _days_in_month(month, year=1):
+        """返回指定月份的天数，支持闰年。"""
+        if month in (1, 3, 5, 7, 8, 10, 12):
+            return 31
+        if month in (4, 6, 9, 11):
+            return 30
+        if month == 2:
+            return 29 if (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0) else 28
+        return 30
+
     def _apply_character_updates(self, updates):
         characters = self.get_characters()
         for char in characters:
@@ -339,12 +357,15 @@ class StoryEngine:
         day_delta = update.get("day_delta", 0)
         if day_delta:
             timeline["day"] += day_delta
-            while timeline["day"] > 30:
-                timeline["day"] -= 30
+            while True:
+                days_in_month = self._days_in_month(timeline["month"], timeline["year"])
+                if timeline["day"] <= days_in_month:
+                    break
+                timeline["day"] -= days_in_month
                 timeline["month"] += 1
-            while timeline["month"] > 12:
-                timeline["month"] -= 12
-                timeline["year"] += 1
+                if timeline["month"] > 12:
+                    timeline["month"] = 1
+                    timeline["year"] += 1
         if update.get("time_of_day"):
             timeline["time_of_day"] = update["time_of_day"]
         if update.get("weather"):
