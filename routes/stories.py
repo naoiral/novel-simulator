@@ -113,6 +113,21 @@ def delete_chapter(story_id, chapter_num):
     return jsonify({"ok": True})
 
 
+# ========== 章节重排序 ==========
+
+@stories_bp.route("/api/stories/<story_id>/chapters/reorder", methods=["PUT"])
+def reorder_chapters(story_id):
+    """重排序章节。接收 {order: [3,1,2,4]} 表示新的章节顺序。"""
+    data = request.json
+    order = data.get("order", [])
+    if not order:
+        return jsonify({"error": "缺少 order 参数"}), 400
+    engine = _get_engine(story_id)
+    engine.memory.reorder_chapters(order)
+    logger.info("章节重排序: 故事%s %s", story_id, order)
+    return jsonify({"ok": True})
+
+
 # ========== 导出 ==========
 
 @stories_bp.route("/api/stories/<story_id>/export", methods=["GET"])

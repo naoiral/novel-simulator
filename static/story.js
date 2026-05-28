@@ -67,17 +67,13 @@ async function loadChapters(reset = true) {
             if (!d.has_more && loadMore) loadMore.remove();
         }
 
-        // 更新章节导航（全量）
-        if (reset) {
-            const allNums = d.chapters.map(ch => ch.num);
-            // 如果有更多章节，用 total 生成完整导航
-            if (nav) {
-                const navHtml = [];
-                for (let i = d.total; i >= 1; i--) {
-                    navHtml.push(`<div class="chapter-nav-item" onclick="scrollToChapter(${i})">第${i}章</div>`);
-                }
-                nav.innerHTML = navHtml.join('');
+        // 更新章节导航（全量，支持拖拽）
+        if (reset && nav) {
+            const navHtml = [];
+            for (let i = d.total; i >= 1; i--) {
+                navHtml.push(`<div class="chapter-nav-item" draggable="true" data-num="${i}" ondragstart="onChapterDragStart(event)" ondragover="onChapterDragOver(event)" ondrop="onChapterDrop(event)">第${i}章</div>`);
             }
+            nav.innerHTML = navHtml.join('');
         }
     } catch (e) { toast("加载章节失败: " + e.message, "error"); }
 }
@@ -85,6 +81,54 @@ async function loadChapters(reset = true) {
 function loadMoreChapters() {
     chapterPage++;
     loadChapters(false);
+}
+
+// 章节拖拽排序
+let _dragChapterNum = null;
+
+function onChapterDragStart(e) {
+    _dragChapterNum = parseInt(e.target.dataset.num);
+    e.dataTransfer.effectAllowed = "move";
+    e.target.style.opacity = "0.5";
+}
+
+function onChapterDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+}
+
+async function onChapterDrop(e) {
+    e.preventDefault();
+    const targetNum = parseInt(e.target.dataset.num);
+    if (!_dragChapterNum || _dragChapterNum === targetNum) return;
+    e.target.style.opacity = "";
+
+    // 构建新的顺序：当前顺序是 total, total-1, ..., 1
+    // 需要转换为正序 1, 2, ..., total
+    const nav = $("chapter-nav-list");
+    const items = nav.querySelectorAll(".chapter-nav-item");
+    const currentOrder = Array.from(items).map(el => parseInt(el.dataset.num)).reverse(); // 正序
+
+    // 找到拖拽源和目标的位置
+    const fromIdx = currentOrder.indexOf(_dragChapterNum);
+    const toIdx = currentOrder.indexOf(targetNum);
+    if (fromIdx < 0 || toIdx < 0) return;
+
+    // 移动元素
+    const newOrder = [...currentOrder];
+    newOrder.splice(fromIdx, 1);
+    newOrder.splice(toIdx, 0, _dragChapterNum);
+
+    try {
+        await api(`/api/stories/${S.storyId}/chapters/reorder`, {
+            method: "PUT", body: JSON.stringify({ order: newOrder })
+        });
+        toast("章节已重排序", "success");
+        await loadChapters();
+    } catch (err) {
+        toast("重排序失败: " + err.message, "error");
+    }
+    _dragChapterNum = null;
 }
 
 function scrollToChapter(num) {

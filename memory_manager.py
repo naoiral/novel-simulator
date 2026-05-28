@@ -80,6 +80,25 @@ class MemoryManager:
             os.remove(json_path)
         return deleted
 
+    def reorder_chapters(self, new_order):
+        """重排序章节目录。new_order 是原章节号的新顺序列表，如 [3,1,2] 表示原第3章变第1章。"""
+        # 先读取所有章节内容到内存
+        chapters_data = {}
+        for old_num in new_order:
+            content = self.load_chapter(old_num)
+            meta = self.load_chapter_meta(old_num)
+            if content:
+                chapters_data[old_num] = {"content": content, "meta": meta}
+        # 删除所有章节文件
+        for f in os.listdir(self.chapters_dir):
+            os.remove(os.path.join(self.chapters_dir, f))
+        # 按新顺序写入
+        for new_num, old_num in enumerate(new_order, 1):
+            if old_num in chapters_data:
+                data = chapters_data[old_num]
+                title = data["meta"].get("title", "") if data["meta"] else ""
+                self.save_chapter(new_num, data["content"], title)
+
     def get_recent_chapters(self, count=3):
         chapters = self._list_chapters()
         recent = chapters[-count:] if len(chapters) > count else chapters
