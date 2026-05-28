@@ -173,6 +173,55 @@ def generate_metadata(story_id):
     return jsonify(result)
 
 
+@ai_bp.route("/api/stories/<story_id>/plot-tree", methods=["GET"])
+def get_plot_tree(story_id):
+    """返回剧情线图数据：大纲结构 + 章节进度 + 关键事件。"""
+    engine = _get_engine(story_id)
+    outline = engine.get_outline()
+    chapters = engine.memory._list_chapters()
+    events = engine.memory.get_events()
+    foreshadows = engine.memory.get_foreshadows()
+
+    # 整理大纲节点
+    nodes = []
+    edges = []
+    if outline and outline.get("volumes"):
+        prev_node = None
+        for vi, vol in enumerate(outline["volumes"]):
+            vol_id = f"vol{vi}"
+            nodes.append({"id": vol_id, "label": vol.get("name", f"卷{vi+1}"), "type": "volume"})
+            if prev_node:
+                edges.append({"from": prev_node, "to": vol_id, "label": ""})
+            prev_node = vol_id
+
+            if vol.get("chapters"):
+                prev_ch = None
+                for ci, ch in enumerate(vol["chapters"]):
+                    ch_id = f"ch{vi}_{ci}"
+                    is_done = ch.get("done", False)
+                    is_active = ch.get("active", False)
+                    status = "done" if is_done else ("active" if is_active else "pending")
+                    nodes.append({"id": ch_id, "label": ch.get("title", f"节点{ci+1}"), "type": "chapter", "status": status, "summary": ch.get("summary", "")})
+                    edges.append({"from": vol_id if ci == 0 else prev_ch, "to": ch_id, "label": ""})
+                    prev_ch = ch_id
+
+    # 已写章节
+    for num in chapters:
+        content = engine.memory.load_chapter(num)
+        meta = engine.memory.load_chapter_meta(num)
+        title = meta.get("title", "") if meta else ""
+        nodes.append({"id": f"written_{num}", "label": f"第{num}章 {title}", "type": "written"})
+        if num > 1 and f"written_{num-1}" in [n["id"] for n in nodes]:
+            edges.append({"from": f"written_{num-1}", "to": f"written_{num}", "label": ""})
+
+    # 关键事件
+    for ev in events:
+        ev_id = f"ev_{ev.get('chapter', 0)}_{ev.get('type', '')}"
+        nodes.append({"id": ev_id, "label": ev.get("description", "")[:20], "type": "event", "priority": ev.get("priority", "normal")})
+
+    return jsonify({"nodes": nodes, "edges": edges, "total_chapters": len(chapters)})
+
+
 @ai_bp.route("/api/stories/<story_id>/auto-start", methods=["POST"])
 def auto_start(story_id):
     if not _ai_engine.is_ready():

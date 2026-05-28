@@ -215,6 +215,7 @@ async function openStory(id) {
     $("nav-settings").style.display = "";
     $("nav-story").style.display = "";
     $("nav-relation").style.display = "";
+    $("nav-plot").style.display = "";
     showPage("story");
     loadStories();
     try {
@@ -229,7 +230,7 @@ async function deleteStory(id) {
     if (!confirm("确定删除这个故事？")) return;
     try {
         await api(`/api/stories/${id}`, { method: "DELETE" });
-        if (S.storyId === id) { S.storyId = null; $("nav-settings").style.display = "none"; $("nav-story").style.display = "none"; $("nav-relation").style.display = "none"; }
+        if (S.storyId === id) { S.storyId = null; $("nav-settings").style.display = "none"; $("nav-story").style.display = "none"; $("nav-relation").style.display = "none"; $("nav-plot").style.display = "none"; }
         loadStories(); toast("已删除", "success");
     } catch (e) { toast("删除失败: " + e.message, "error"); }
 }

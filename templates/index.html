@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>小说世界模拟器</title>
 <link rel="stylesheet" href="/static/style.css?v=5">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 </head>
 <body>
 
@@ -53,6 +54,9 @@
                 </a>
                 <a class="sidebar-nav-item" onclick="showRelationGraph()" id="nav-relation" style="display:none">
                     <span class="nav-icon">🔗</span><span class="nav-label">人物关系图</span>
+                </a>
+                <a class="sidebar-nav-item" onclick="showPlotTree()" id="nav-plot" style="display:none">
+                    <span class="nav-icon">🗺️</span><span class="nav-label">剧情线图</span>
                 </a>
                 <a class="sidebar-nav-item" onclick="toggleApiPanel()">
                     <span class="nav-icon">⚡</span>
@@ -390,6 +394,15 @@
         <h3 style="margin-bottom:14px">人物关系图</h3>
         <div id="relation-graph" style="display:flex;justify-content:center;padding:8px 0"></div>
         <div class="modal-actions"><button onclick="closeModal('relation-modal')" class="btn btn-primary">关闭</button></div>
+    </div>
+</div>
+
+<!-- 剧情线图 -->
+<div id="plot-modal" class="modal hidden" onclick="if(event.target===this)closeModal('plot-modal')">
+    <div class="modal-content" style="max-width:800px;max-height:85vh">
+        <h3 style="margin-bottom:14px">剧情线图</h3>
+        <div id="plot-tree-container" style="overflow:auto;max-height:65vh;padding:8px"></div>
+        <div class="modal-actions"><button onclick="closeModal('plot-modal')" class="btn btn-primary">关闭</button></div>
     </div>
 </div>
 

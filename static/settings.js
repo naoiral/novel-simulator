@@ -396,3 +396,80 @@ function showRelationGraph() {
     container.innerHTML = svg;
     openModal("relation-modal");
 }
+
+/* ========== 剧情线图（Mermaid.js） ========== */
+async function showPlotTree() {
+    if (!S.storyId) return toast("请先打开一个故事", "error");
+    const container = $("plot-tree-container");
+    container.innerHTML = '<p style="text-align:center;color:var(--text3);padding:20px">加载中...</p>';
+    openModal("plot-modal");
+
+    try {
+        const data = await api(`/api/stories/${S.storyId}/plot-tree`);
+        if (!data.nodes || !data.nodes.length) {
+            container.innerHTML = '<p style="text-align:center;color:var(--text3);padding:40px">暂无大纲，先去设定页创建大纲</p>';
+            return;
+        }
+
+        // 生成 Mermaid 流程图定义
+        let def = "flowchart TD\n";
+
+        // 节点样式
+        data.nodes.forEach(n => {
+            const safeLabel = n.label.replace(/"/g, "'").replace(/\n/g, " ");
+            if (n.type === "volume") {
+                def += `    ${n.id}["📦 ${safeLabel}"]\n`;
+            } else if (n.type === "chapter") {
+                if (n.status === "done") {
+                    def += `    ${n.id}["✅ ${safeLabel}"]\n`;
+                } else if (n.status === "active") {
+                    def += `    ${n.id}["▶️ ${safeLabel}"]\n`;
+                } else {
+                    def += `    ${n.id}["⬜ ${safeLabel}"]\n`;
+                }
+            } else if (n.type === "written") {
+                def += `    ${n.id}["📝 ${safeLabel}"]\n`;
+            } else if (n.type === "event") {
+                const icon = n.priority === "high" ? "🔥" : "📌";
+                def += `    ${n.id}["${icon} ${safeLabel}"]\n`;
+            }
+        });
+
+        // 连线
+        data.edges.forEach(e => {
+            if (e.from && e.to) {
+                def += `    ${e.from} --> ${e.to}\n`;
+            }
+        });
+
+        // 样式
+        def += "\n";
+        def += "    classDef volume fill:#e8e0f0,stroke:#7c6fe0,stroke-width:2px\n";
+        def += "    classDef done fill:#d4edda,stroke:#3a9a5b,stroke-width:1px\n";
+        def += "    classDef active fill:#fff3cd,stroke:#c08830,stroke-width:2px\n";
+        def += "    classDef pending fill:#f8f8f8,stroke:#ccc,stroke-width:1px\n";
+        def += "    classDef written fill:#d1ecf1,stroke:#5b6abf,stroke-width:1px\n";
+        def += "    classDef event fill:#fce4ec,stroke:#c44040,stroke-width:1px\n";
+
+        data.nodes.forEach(n => {
+            if (n.type === "volume") def += `    class ${n.id} volume\n`;
+            else if (n.type === "chapter") def += `    class ${n.id} ${n.status}\n`;
+            else if (n.type === "written") def += `    class ${n.id} written\n`;
+            else if (n.type === "event") def += `    class ${n.id} event\n`;
+        });
+
+        // 用 mermaid 渲染
+        container.innerHTML = `<div class="mermaid">${def}</div>`;
+        // 初始化 mermaid 主题
+        const isDark = document.documentElement.classList.contains("dark");
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: isDark ? "dark" : "default",
+            flowchart: { curve: "basis", padding: 16 },
+        });
+        await mermaid.run({ nodes: container.querySelectorAll(".mermaid") });
+
+    } catch (e) {
+        container.innerHTML = `<p style="text-align:center;color:var(--danger);padding:20px">加载失败: ${esc(e.message)}</p>`;
+    }
+}
