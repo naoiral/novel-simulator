@@ -17,12 +17,12 @@
     --text:#3A3A5A;
     --text2:#7A7A9A;
     --text3:#B0B0C8;
-    --accent:#B48EAD;
-    --accent2:#A0789A;
-    --accent3:#8A6585;
-    --accent-soft:rgba(180,142,173,.08);
-    --accent-border:rgba(180,142,173,.2);
-    --accent-glow:rgba(180,142,173,.15);
+    --accent:#7A8A9A;
+    --accent2:#6A7A8A;
+    --accent3:#5A6A7A;
+    --accent-soft:rgba(122,138,154,.08);
+    --accent-border:rgba(122,138,154,.2);
+    --accent-glow:rgba(122,138,154,.15);
     --success:#98D8C8;
     --success-soft:rgba(152,216,200,.12);
     --danger:#E8A0A0;
@@ -33,9 +33,9 @@
     --input-bg:#FFFFFF;
     --shadow-xs:0 1px 2px rgba(58,58,90,.04);
     --shadow-sm:0 2px 6px rgba(58,58,90,.06);
-    --shadow-md:0 4px 12px rgba(180,142,173,.12);
-    --shadow-lg:0 8px 24px rgba(180,142,173,.15);
-    --shadow-hover:0 4px 12px rgba(180,142,173,.15);
+    --shadow-md:0 4px 12px rgba(122,138,154,.12);
+    --shadow-lg:0 8px 24px rgba(122,138,154,.15);
+    --shadow-hover:0 4px 12px rgba(122,138,154,.15);
     --r:12px;--r2:8px;--r3:6px;
     --font-main:"Noto Sans SC Rounded","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
     --font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
@@ -58,12 +58,12 @@
     --text:#E0E0E0;
     --text2:#A0A0B0;
     --text3:#6A6A80;
-    --accent:#C9A9D9;
-    --accent2:#D9B9E9;
-    --accent3:#B898C8;
-    --accent-soft:rgba(201,169,217,.1);
-    --accent-border:rgba(201,169,217,.18);
-    --accent-glow:rgba(201,169,217,.12);
+    --accent:#8A9AAA;
+    --accent2:#9AABBB;
+    --accent3:#7A8A9A;
+    --accent-soft:rgba(138,154,170,.1);
+    --accent-border:rgba(138,154,170,.18);
+    --accent-glow:rgba(138,154,170,.12);
     --success:#A8E8D8;
     --success-soft:rgba(168,232,216,.1);
     --danger:#D08888;
@@ -76,7 +76,7 @@
     --shadow-sm:0 2px 6px rgba(0,0,0,.2);
     --shadow-md:0 4px 12px rgba(0,0,0,.25);
     --shadow-lg:0 8px 24px rgba(0,0,0,.3);
-    --shadow-hover:0 4px 12px rgba(201,169,217,.15);
+    --shadow-hover:0 4px 12px rgba(138,154,170,.15);
 }
 
 html{font-size:14px;height:100%}
@@ -161,7 +161,7 @@ a{color:var(--accent);text-decoration:none}
 }
 .btn-primary{
     background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
-    box-shadow:0 2px 8px rgba(180,142,173,.2);
+    box-shadow:0 2px 8px rgba(122,138,154,.2);
 }
 .btn-primary:hover{transform:scale(1.03);box-shadow:0 4px 16px var(--accent-glow)}
 .btn-primary:active{transform:scale(.98)}
@@ -403,7 +403,7 @@ textarea.input{resize:vertical;min-height:36px}
     border:none;border-radius:var(--r);font-size:14px;font-weight:500;
     cursor:pointer;transition:all .2s;white-space:nowrap;
     min-height:48px;min-width:120px;
-    box-shadow:0 2px 8px rgba(180,142,173,.2);
+    box-shadow:0 2px 8px rgba(122,138,154,.2);
 }
 .btn-write:hover{transform:scale(1.03);box-shadow:0 4px 16px var(--accent-glow)}
 .btn-write:active{transform:scale(.98)}
