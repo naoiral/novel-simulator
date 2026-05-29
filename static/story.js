@@ -75,6 +75,9 @@ async function loadChapters(reset = true) {
             }
             nav.innerHTML = navHtml.join('');
         }
+        // 更新章节数量
+        const badge = $("chapter-count-badge");
+        if (badge) badge.textContent = d.total > 0 ? `(${d.total})` : "";
     } catch (e) { toast("加载章节失败: " + e.message, "error"); }
 }
 
@@ -414,7 +417,7 @@ async function doSearch(query) {
         return;
     }
     if (!S.storyId) {
-        results.innerHTML = '<div class="search-empty">请先打开一个故事</div>';
+        results.innerHTML = '<div class="search-empty">请先打开一部小说</div>';
         return;
     }
     const q = query.trim().toLowerCase();

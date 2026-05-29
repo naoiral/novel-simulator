@@ -140,7 +140,7 @@ async function loadGenreTemplates() {
 async function quickStart(genre) {
     showLoading("AI 正在生成设定...");
     try {
-        const story = await api("/api/stories", { method: "POST", body: JSON.stringify({ title: `${genre}故事`, category: genre }) });
+        const story = await api("/api/stories", { method: "POST", body: JSON.stringify({ title: `${genre}小说`, category: genre }) });
         S.storyId = story.id;
         await api(`/api/stories/${story.id}/auto-start`, { method: "POST", body: JSON.stringify({ genre, theme: genre + "题材" }) });
         toast("设定已生成！", "success");
@@ -149,7 +149,7 @@ async function quickStart(genre) {
     hideLoading();
 }
 
-/* ========== 故事列表 ========== */
+/* ========== 小说列表 ========== */
 async function loadStories() {
     try {
         const d = await api("/api/stories");
@@ -160,7 +160,7 @@ async function loadStories() {
         // 左侧导航
         if (navList) {
             if (!stories.length) {
-                navList.innerHTML = '<p style="font-size:11px;color:var(--text3);padding:6px 8px">暂无故事</p>';
+                navList.innerHTML = '<p style="font-size:11px;color:var(--text3);padding:6px 8px">暂无小说</p>';
             } else {
                 navList.innerHTML = stories.map(s =>
                     `<div class="story-nav-item ${s.id === S.storyId ? 'active' : ''}" onclick="openStory('${s.id}')">
@@ -177,7 +177,7 @@ async function loadStories() {
                 <div class="home-empty-icon">🐱</div>
                 <div class="home-empty-title">开始你的创作之旅</div>
                 <div class="home-empty-desc">在左侧选择一个题材快速开始，或者点击下方按钮从零开始</div>
-                <div><button onclick="showCreateModal()" class="btn btn-primary" style="transform:scale(1.1)">+ 新故事</button></div>
+                <div><button onclick="showCreateModal()" class="btn btn-primary" style="transform:scale(1.1)">+ 新小说</button></div>
             </div>`;
             return;
         }
@@ -227,7 +227,7 @@ async function openStory(id) {
 }
 
 async function deleteStory(id) {
-    if (!confirm("确定删除这个故事？")) return;
+    if (!confirm("确定删除这部小说？")) return;
     try {
         await api(`/api/stories/${id}`, { method: "DELETE" });
         if (S.storyId === id) { S.storyId = null; $("nav-settings").style.display = "none"; $("nav-story").style.display = "none"; $("nav-relation").style.display = "none"; $("nav-plot").style.display = "none"; }

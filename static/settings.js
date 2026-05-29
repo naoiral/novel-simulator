@@ -3,7 +3,7 @@ async function loadSettings() {
     if (!S.storyId) return;
     try {
         const story = await api(`/api/stories/${S.storyId}`);
-        $("settings-title").innerHTML = `${esc(story.title)} <span style="font-size:12px;color:var(--text3);font-weight:400;margin-left:8px">· 每个故事有独立的人物、世界观和大纲</span>`;
+        $("settings-title").innerHTML = `${esc(story.title)} <span style="font-size:12px;color:var(--text3);font-weight:400;margin-left:8px">· 每部小说有独立的人物、世界观和大纲</span>`;
         S.characters = story.characters || [];
         S.world = story.world || {};
         S.outline = story.outline;
@@ -188,7 +188,7 @@ async function generateOutline() {
     const theme = $("outline-theme").value.trim();
     const conflict = $("outline-conflict").value.trim();
     const ending = $("outline-ending").value.trim();
-    if (!theme) return toast("请输入故事主题", "error");
+    if (!theme) return toast("请输入小说主题", "error");
 
     const btn = $("btn-gen-outline");
     if (btn.classList.contains("btn-loading")) return;
@@ -242,7 +242,7 @@ async function saveItems() { try { await api(`/api/stories/${S.storyId}/items`, 
 function buildSettingsText() {
     let text = "";
     if (S.outline) {
-        text += "=== 故事大纲 ===\n";
+        text += "=== 小说大纲 ===\n";
         if (S.outline.title_suggestions) text += `推荐书名：${S.outline.title_suggestions.join(" / ")}\n`;
         if (S.outline.synopsis) text += `简介：${S.outline.synopsis}\n`;
         if (S.outline.volumes) {
@@ -399,7 +399,7 @@ function showRelationGraph() {
 
 /* ========== 剧情线图（Mermaid.js） ========== */
 async function showPlotTree() {
-    if (!S.storyId) return toast("请先打开一个故事", "error");
+    if (!S.storyId) return toast("请先打开一部小说", "error");
     const container = $("plot-tree-container");
     container.innerHTML = '<p style="text-align:center;color:var(--text3);padding:20px">加载中...</p>';
     openModal("plot-modal");

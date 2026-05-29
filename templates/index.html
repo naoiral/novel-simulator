@@ -34,10 +34,10 @@
             </div>
             <div class="sidebar-nav-items">
                 <a class="sidebar-nav-item active" data-page="home" onclick="showPage('home')">
-                    <span class="nav-icon">📚</span><span class="nav-label">我的故事</span>
+                    <span class="nav-icon">📚</span><span class="nav-label">我的小说</span>
                 </a>
                 <a class="sidebar-nav-item" data-page="settings" onclick="showPage('settings')" id="nav-settings" style="display:none">
-                    <span class="nav-icon">⚙️</span><span class="nav-label nav-label-text">故事设定</span>
+                    <span class="nav-icon">⚙️</span><span class="nav-label nav-label-text">小说设定</span>
                 </a>
                 <a class="sidebar-nav-item" data-page="story" onclick="showPage('story')" id="nav-story" style="display:none">
                     <span class="nav-icon">✍️</span><span class="nav-label nav-label-text">写作</span>
@@ -72,10 +72,10 @@
             </div>
         </div>
 
-        <!-- 故事列表 -->
+        <!-- 小说列表 -->
         <div class="sidebar-stories" id="sidebar-stories">
             <div class="sidebar-nav-label" style="display:flex;justify-content:space-between;align-items:center">
-                故事列表
+                小说列表
                 <button class="btn btn-ghost btn-sm" onclick="showCreateModal()" style="padding:2px 5px;font-size:10px">+</button>
             </div>
             <div id="story-nav-list" class="story-nav-list"></div>
@@ -95,11 +95,11 @@
                         <div class="genre-grid" id="genre-grid"></div>
                     </div>
                 </div>
-                <!-- 右侧：故事列表 -->
+                <!-- 右侧：小说列表 -->
                 <div class="home-right">
                     <div class="home-right-header">
-                        <h2>我的故事</h2>
-                        <button onclick="showCreateModal()" class="btn btn-primary btn-sm">+ 新故事</button>
+                        <h2>我的小说</h2>
+                        <button onclick="showCreateModal()" class="btn btn-primary btn-sm">+ 新小说</button>
                     </div>
                     <div id="story-list" class="story-table-wrap"></div>
                 </div>
@@ -109,7 +109,7 @@
         <!-- ==================== 设定页 ==================== -->
         <div id="page-settings" class="page">
             <div class="page-header">
-                <h1 id="settings-title">故事设定</h1>
+                <h1 id="settings-title">小说设定</h1>
                 <div class="page-header-actions">
                     <button onclick="previewAll()" class="btn btn-ghost btn-sm">预览</button>
                     <button onclick="copyPreview()" class="btn btn-ghost btn-sm">复制</button>
@@ -120,11 +120,11 @@
                 <!-- 大纲 -->
                 <div class="section-block">
                     <div class="section-title" onclick="toggleSection('sec-outline')">
-                        <span>📖 故事大纲</span>
+                        <span>📖 小说大纲</span>
                         <span class="toggle-arrow" id="arrow-sec-outline">▼</span>
                     </div>
                     <div id="sec-outline" class="section-body">
-                        <div class="form-group"><label>故事主题</label><textarea id="outline-theme" rows="2" class="input" placeholder="如：少年从底层崛起，踏上修仙巅峰"></textarea></div>
+                        <div class="form-group"><label>小说主题</label><textarea id="outline-theme" rows="2" class="input" placeholder="如：少年从底层崛起，踏上修仙巅峰"></textarea></div>
                         <div class="form-group"><label>核心冲突</label><textarea id="outline-conflict" rows="2" class="input" placeholder="如：与天道的对抗，身世之谜的揭露"></textarea></div>
                         <div class="form-group">
                             <label>结局方向</label>
@@ -261,12 +261,20 @@
                     <div class="story-body">
                         <!-- 章节导航 -->
                         <div class="chapter-nav" id="chapter-nav">
-                            <div class="chapter-nav-header">章节 <button class="btn btn-ghost btn-sm" onclick="toggleChapterNav()" style="padding:1px 4px;font-size:10px">☰</button></div>
+                            <div class="chapter-nav-header">
+                                <span>📖 章节 <span id="chapter-count-badge" style="font-size:11px;color:var(--text3);margin-left:4px"></span></span>
+                                <button class="btn btn-ghost btn-sm" onclick="toggleChapterNav()" style="padding:1px 4px;font-size:10px">☰</button>
+                            </div>
                             <div class="chapter-nav-list" id="chapter-nav-list"></div>
                         </div>
                         <!-- 章节内容 -->
                         <div id="story-content" class="story-chapters">
-                            <div class="empty-state"><p>还没有章节</p><p class="hint">在下方输入指令开始写作</p></div>
+                            <div class="empty-state">
+                                <p style="font-size:32px;margin-bottom:12px">✍️</p>
+                                <p>还没有章节</p>
+                                <p class="hint">在下方输入框写一句话指示，点「写下一章」AI 自动生成</p>
+                                <p class="hint">例如：让主角在一个雨夜醒来，发现自己穿越到了古代</p>
+                            </div>
                         </div>
                     </div>
 
@@ -321,12 +329,12 @@
     </div>
 </div>
 
-<!-- 创建故事 -->
+<!-- 创建小说 -->
 <div id="create-modal" class="modal hidden" onclick="if(event.target===this)closeModal('create-modal')">
     <div class="modal-content">
         <button class="modal-close" onclick="closeModal('create-modal')">✕</button>
-        <h3 style="margin-bottom:14px">创建新故事</h3>
-        <div class="form-group"><label>标题</label><input type="text" id="new-title" placeholder="给故事起个名字" class="input"></div>
+        <h3 style="margin-bottom:14px">创建新小说</h3>
+        <div class="form-group"><label>标题</label><input type="text" id="new-title" placeholder="给小说起个名字" class="input"></div>
         <div class="form-group"><label>简介（可选）</label><textarea id="new-desc" placeholder="一句话描述..." rows="2" class="input"></textarea></div>
         <div class="form-group"><label>分类（可选）</label><input type="text" id="new-category" placeholder="修仙、都市、言情..." class="input"></div>
         <div class="modal-actions"><button onclick="closeModal('create-modal')" class="btn btn-ghost">取消</button><button onclick="createStory()" class="btn btn-primary">创建</button></div>
@@ -368,7 +376,7 @@
     <div class="modal-content" style="max-width:560px">
         <button class="modal-close" onclick="closeModal('memory-modal')">✕</button>
         <h3 style="margin-bottom:14px">记忆管理</h3>
-        <div class="form-group"><label>故事摘要</label><textarea id="memory-summary" rows="4" class="input" placeholder="每5章自动生成"></textarea></div>
+        <div class="form-group"><label>小说摘要</label><textarea id="memory-summary" rows="4" class="input" placeholder="每5章自动生成"></textarea></div>
         <div class="form-group"><label>当前世界状态</label><textarea id="memory-state" rows="3" class="input"></textarea></div>
         <div class="form-group"><label>快照存档</label><div id="snapshots-list"></div></div>
         <div class="modal-actions">
@@ -394,7 +402,7 @@
     <div class="modal-content" style="max-width:480px;max-height:80vh;display:flex;flex-direction:column">
         <button class="modal-close" onclick="closeModal('chat-modal')">✕</button>
         <h3 style="margin-bottom:6px">💬 角色对话</h3>
-        <p style="font-size:11px;color:var(--text3);margin-bottom:12px">和故事中的角色聊天，角色会按设定的性格和语气回复你。可以用来探索角色性格、测试对话风格。</p>
+        <p style="font-size:11px;color:var(--text3);margin-bottom:12px">和小说中的角色聊天，角色会按设定的性格和语气回复你。可以用来探索角色性格、测试对话风格。</p>
         <div style="display:flex;gap:6px;margin-bottom:10px">
             <select id="chat-character" class="input input-sm" style="width:120px"><option value="">选择角色</option></select>
             <input type="text" id="chat-scene" class="input input-sm" placeholder="场景，如：在酒馆里" style="flex:1">
