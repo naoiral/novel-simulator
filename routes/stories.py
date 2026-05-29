@@ -154,9 +154,7 @@ def save_manual_chapter(story_id):
     """手动保存用户编写的章节。"""
     data = request.json
     title = data.get("title", "").strip()
-    content = data.get("content", "").strip()
-    if not content:
-        return jsonify({"error": "章节内容不能为空"}), 400
+    content = data.get("content", "")
     engine = _get_engine(story_id)
     next_num = engine.memory.get_total_chapters() + 1
     chapter_text = f"## {title}\n\n{content}" if title else content

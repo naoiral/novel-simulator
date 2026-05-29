@@ -111,19 +111,28 @@ async function createNewChapter() {
     } catch (e) { toast("创建失败: " + e.message, "error"); }
 }
 
-// 保存当前选中章节
+// 保存当前选中章节（有章节号则更新，无则创建）
 async function saveChapter() {
-    if (!_currentChapterNum) return toast("请先选中或创建一个章节", "error");
     const title = $("chapter-title-input").value.trim();
     const content = $("chapter-editor").value;
     try {
-        await api(`/api/stories/${S.storyId}/chapters/${_currentChapterNum}`, {
-            method: "PUT",
-            body: JSON.stringify({ title, content })
-        });
-        toast(`第${_currentChapterNum}章已保存`, "success");
-        // 刷新导航（标题可能变了）
-        await loadChapters();
+        if (_currentChapterNum) {
+            await api(`/api/stories/${S.storyId}/chapters/${_currentChapterNum}`, {
+                method: "PUT",
+                body: JSON.stringify({ title, content })
+            });
+            toast(`第${_currentChapterNum}章已保存`, "success");
+            await loadChapters();
+        } else {
+            const result = await api(`/api/stories/${S.storyId}/chapters/manual`, {
+                method: "POST",
+                body: JSON.stringify({ title, content })
+            });
+            toast(`第${result.chapter_num}章已保存`, "success");
+            $("chapter-title-input").value = "";
+            $("chapter-editor").value = "";
+            await loadChapters();
+        }
     } catch (e) { toast("保存失败: " + e.message, "error"); }
 }
 
@@ -238,30 +247,42 @@ function autoResizeInput(el) {
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
 }
 
-function fillCommand(text) { $("advance-instruction").value = text; $("advance-instruction").focus(); }
-function fillEditor(text) { $("chapter-editor").value = text; $("chapter-editor").focus(); }
-
-// 保存手写章节
-async function saveChapter() {
-    const title = $("chapter-title-input").value.trim();
-    const content = $("chapter-editor").value.trim();
-    if (!content) return toast("请先写点内容", "error");
+// 快捷指令：调用 AI 生成内容
+async function executeQuickCommand(instruction) {
+    if (!S.storyId) return toast("请先打开一部小说", "error");
+    const btn = event.target;
+    btn.classList.add("loading");
+    showLoading("AI 正在根据指令生成...");
+    _advanceCancelled = false;
     try {
-        const result = await api(`/api/stories/${S.storyId}/chapters/manual`, {
+        const { task_id } = await api(`/api/stories/${S.storyId}/advance`, {
             method: "POST",
-            body: JSON.stringify({ title, content })
+            body: JSON.stringify({ instruction })
         });
-        if (result.error) toast("保存失败: " + result.error, "error");
-        else {
-            toast(`第${result.chapter_num}章已保存`, "success");
-            $("chapter-title-input").value = "";
-            $("chapter-editor").value = "";
-            $("ai-draft-panel").classList.add("hidden");
-            await loadChapters();
-            const chapters = document.querySelectorAll(".chapter");
-            if (chapters.length) chapters[chapters.length - 1].scrollIntoView({ behavior: "smooth" });
+        let result;
+        while (true) {
+            if (_advanceCancelled) { toast("已取消", "info"); break; }
+            await new Promise(r => setTimeout(r, 1500));
+            if (_advanceCancelled) { toast("已取消", "info"); break; }
+            const task = await api(`/api/tasks/${task_id}`);
+            if (task.status === "done") { result = task.result; break; }
+            if (task.status === "error") { toast("生成失败: " + task.error, "error"); break; }
         }
-    } catch (e) { toast("保存失败: " + e.message, "error"); }
+        if (result && !result.error) {
+            const panel = $("ai-draft-panel");
+            const draftContent = $("ai-draft-content");
+            const title = result.chapter_title || "";
+            const content = result.content || "";
+            draftContent.textContent = content;
+            panel.classList.remove("hidden");
+            window._aiDraft = { title, content };
+            toast("AI 草稿已生成，查看后选择是否替换", "info");
+        } else if (result && result.error) {
+            toast("生成失败: " + result.error, "error");
+        }
+    } catch (e) { toast("生成失败: " + e.message, "error"); }
+    btn.classList.remove("loading");
+    hideLoading();
 }
 
 // AI 生成草稿（不直接保存，先预览）
