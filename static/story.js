@@ -249,6 +249,94 @@ function autoResizeInput(el) {
 }
 
 function fillCommand(text) { $("advance-instruction").value = text; $("advance-instruction").focus(); }
+function fillEditor(text) { $("chapter-editor").value = text; $("chapter-editor").focus(); }
+
+// 保存手写章节
+async function saveChapter() {
+    const title = $("chapter-title-input").value.trim();
+    const content = $("chapter-editor").value.trim();
+    if (!content) return toast("请先写点内容", "error");
+    try {
+        const result = await api(`/api/stories/${S.storyId}/chapters/manual`, {
+            method: "POST",
+            body: JSON.stringify({ title, content })
+        });
+        if (result.error) toast("保存失败: " + result.error, "error");
+        else {
+            toast(`第${result.chapter_num}章已保存`, "success");
+            $("chapter-title-input").value = "";
+            $("chapter-editor").value = "";
+            $("ai-draft-panel").classList.add("hidden");
+            await loadChapters();
+            const chapters = document.querySelectorAll(".chapter");
+            if (chapters.length) chapters[chapters.length - 1].scrollIntoView({ behavior: "smooth" });
+        }
+    } catch (e) { toast("保存失败: " + e.message, "error"); }
+}
+
+// AI 生成草稿（不直接保存，先预览）
+async function aiGenerateDraft() {
+    const btn = $("btn-ai-draft");
+    btn.disabled = true;
+    btn.textContent = "生成中...";
+    showLoading("AI 正在生成草稿...");
+    _advanceCancelled = false;
+    try {
+        const { task_id } = await api(`/api/stories/${S.storyId}/advance`, {
+            method: "POST",
+            body: JSON.stringify({ instruction: $("chapter-editor").value.trim() })
+        });
+        let result;
+        while (true) {
+            if (_advanceCancelled) { toast("已取消", "info"); break; }
+            await new Promise(r => setTimeout(r, 1500));
+            if (_advanceCancelled) { toast("已取消", "info"); break; }
+            const task = await api(`/api/tasks/${task_id}`);
+            if (task.status === "done") { result = task.result; break; }
+            if (task.status === "error") { toast("生成失败: " + task.error, "error"); break; }
+        }
+        if (result && !result.error) {
+            // 显示 AI 草稿预览
+            const panel = $("ai-draft-panel");
+            const draftContent = $("ai-draft-content");
+            const title = result.chapter_title || "";
+            const content = result.content || "";
+            draftContent.textContent = content;
+            panel.classList.remove("hidden");
+            // 保存草稿到临时变量
+            window._aiDraft = { title, content };
+            toast("AI 草稿已生成，查看后选择是否替换", "info");
+        } else if (result && result.error) {
+            toast("生成失败: " + result.error, "error");
+        }
+    } catch (e) { toast("生成失败: " + e.message, "error"); }
+    btn.disabled = false;
+    btn.textContent = "AI 生成草稿";
+    hideLoading();
+}
+
+// 接受 AI 荄稿（替换到编辑器）
+function acceptDraft() {
+    if (!window._aiDraft) return;
+    $("chapter-title-input").value = window._aiDraft.title;
+    $("chapter-editor").value = window._aiDraft.content;
+    $("ai-draft-panel").classList.add("hidden");
+    toast("已替换到编辑器，可以修改后保存", "info");
+}
+
+// 复制 AI 荄稿
+function copyDraft() {
+    if (!window._aiDraft) return;
+    navigator.clipboard.writeText(window._aiDraft.content);
+    toast("已复制到剪贴板", "success");
+}
+
+// 丢弃 AI 草稿
+function discardDraft() {
+    window._aiDraft = null;
+    $("ai-draft-panel").classList.add("hidden");
+    toast("已丢弃", "info");
+}
 
 function toggleQuickTags() {
     const tags = $("quick-tags");

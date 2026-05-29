@@ -398,6 +398,41 @@ textarea.input{resize:vertical;min-height:36px}
 }
 .compose-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .compose-input::placeholder{color:var(--text3)}
+
+/* 章节编辑器 */
+.chapter-editor{
+    width:100%;min-height:160px;max-height:300px;
+    padding:14px 16px;background:var(--input-bg);
+    border:1px solid var(--border);border-radius:var(--r);
+    color:var(--text);font-size:14px;line-height:2;
+    font-family:var(--font-serif);resize:vertical;
+    transition:all .2s;
+}
+.chapter-editor:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.chapter-editor::placeholder{color:var(--text3);font-family:var(--font-main)}
+
+/* 操作栏 */
+.compose-actions{
+    display:flex;align-items:center;gap:8px;margin-top:8px;
+}
+.compose-divider{width:1px;height:24px;background:var(--divider)}
+
+/* AI 草稿预览 */
+.ai-draft-panel{
+    margin-top:10px;border:1px solid var(--accent-border);border-radius:var(--r);
+    background:var(--bg);overflow:hidden;
+}
+.ai-draft-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:8px 12px;background:var(--bg3);
+    border-bottom:1px solid var(--divider);
+    font-size:12px;font-weight:500;color:var(--text2);
+}
+.ai-draft-content{
+    padding:14px 16px;font-family:var(--font-serif);
+    font-size:13px;line-height:2;color:var(--text);
+    max-height:250px;overflow-y:auto;white-space:pre-wrap;
+}
 .btn-write{
     padding:0 28px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;
     border:none;border-radius:var(--r);font-size:14px;font-weight:500;
