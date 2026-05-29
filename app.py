@@ -6,10 +6,14 @@ from flask import Flask, send_from_directory
 from story_engine import StoryEngine
 from ai_engine import AIEngine
 from logger import setup_logging
+from db import init_db, db
 
 setup_logging()
 logger = logging.getLogger(__name__)
 logger.info("小说世界模拟器启动")
+
+# 初始化 SQLite 数据库
+init_db()
 
 app = Flask(__name__, static_folder="static", template_folder="templates")
 
