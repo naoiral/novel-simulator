@@ -80,6 +80,9 @@
             </div>
             <div id="story-nav-list" class="story-nav-list"></div>
         </div>
+        <div style="padding:8px 12px;font-size:10px;color:var(--text3);border-top:1px solid var(--divider);line-height:1.6">
+            数据保存在本地 data/stories/ 目录，JSON 文件格式
+        </div>
     </nav>
 
     <!-- ===== 主内容区 ===== -->
@@ -263,7 +266,6 @@
                         <div class="chapter-nav" id="chapter-nav">
                             <div class="chapter-nav-header">
                                 <span>📖 章节 <span id="chapter-count-badge" style="font-size:11px;color:var(--text3);margin-left:4px"></span></span>
-                                <button class="btn btn-ghost btn-sm" onclick="toggleChapterNav()" style="padding:1px 4px;font-size:10px">☰</button>
                             </div>
                             <div class="chapter-nav-list" id="chapter-nav-list"></div>
                         </div>
@@ -296,7 +298,8 @@
                         <!-- 输入行 -->
                         <div class="compose-row">
                             <textarea id="advance-instruction" class="compose-input" rows="1" placeholder="给 AI 一句话指示，或留空让它自由发挥..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();advanceStory()}"></textarea>
-                            <button onclick="advanceStory()" id="btn-advance" class="btn-write">写下一章</button>
+                            <button onclick="advanceStory()" id="btn-advance" class="btn-write">AI 写下一章</button>
+                            <button onclick="openManualWrite()" class="btn btn-ghost" style="white-space:nowrap;min-height:48px">手写章节</button>
                         </div>
                     </div>
 
@@ -394,6 +397,20 @@
         <h3 style="margin-bottom:14px">人物关系图</h3>
         <div id="relation-graph" style="display:flex;justify-content:center;padding:8px 0"></div>
         <div class="modal-actions"><button onclick="closeModal('relation-modal')" class="btn btn-primary">关闭</button></div>
+    </div>
+</div>
+
+<!-- 手写章节 -->
+<div id="manual-write-modal" class="modal hidden" onclick="if(event.target===this)closeModal('manual-write-modal')">
+    <div class="modal-content" style="max-width:600px">
+        <button class="modal-close" onclick="closeModal('manual-write-modal')">✕</button>
+        <h3 style="margin-bottom:14px">手写章节</h3>
+        <div class="form-group"><label>章节标题</label><input type="text" id="manual-title" class="input" placeholder="如：第一章 觉醒"></div>
+        <div class="form-group"><label>章节内容</label><textarea id="manual-content" class="input" rows="12" placeholder="在这里写你的章节内容..." style="font-family:var(--font-serif);line-height:2;font-size:14px"></textarea></div>
+        <div class="modal-actions">
+            <button onclick="closeModal('manual-write-modal')" class="btn btn-ghost">取消</button>
+            <button onclick="saveManualChapter()" class="btn btn-primary">保存章节</button>
+        </div>
     </div>
 </div>
 

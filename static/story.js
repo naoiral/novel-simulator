@@ -86,6 +86,34 @@ function loadMoreChapters() {
     loadChapters(false);
 }
 
+// 手写章节
+function openManualWrite() {
+    $("manual-title").value = "";
+    $("manual-content").value = "";
+    openModal("manual-write-modal");
+    setTimeout(() => $("manual-title").focus(), 100);
+}
+
+async function saveManualChapter() {
+    const title = $("manual-title").value.trim();
+    const content = $("manual-content").value.trim();
+    if (!content) return toast("请输入章节内容", "error");
+    try {
+        const result = await api(`/api/stories/${S.storyId}/chapters/manual`, {
+            method: "POST",
+            body: JSON.stringify({ title, content })
+        });
+        if (result.error) toast("保存失败: " + result.error, "error");
+        else {
+            toast(`第${result.chapter_num}章已保存`, "success");
+            closeModal("manual-write-modal");
+            await loadChapters();
+            const chapters = document.querySelectorAll(".chapter");
+            if (chapters.length) chapters[chapters.length - 1].scrollIntoView({ behavior: "smooth" });
+        }
+    } catch (e) { toast("保存失败: " + e.message, "error"); }
+}
+
 // 章节拖拽排序
 let _dragChapterNum = null;
 

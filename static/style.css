@@ -40,7 +40,7 @@
     --font-main:"Noto Sans SC Rounded","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
     --font-serif:"Noto Serif SC","Source Han Serif SC","Songti SC",Georgia,serif;
     --sidebar-w:220px;
-    --quickstart-w:260px;
+    --quickstart-w:300px;
     --chapter-nav-w:240px;
     --topbar-h:56px;
     --toolbar-h:48px;
@@ -370,7 +370,7 @@ textarea.input{resize:vertical;min-height:36px}
 .story-chapters .chapter{margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid var(--divider);position:relative}
 .story-chapters .chapter:last-child{border-bottom:none}
 .story-chapters .chapter h3{font-size:18px;font-weight:600;color:var(--accent);margin-bottom:18px;letter-spacing:.5px;font-family:var(--font-serif)}
-.chapter-toolbar{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;opacity:.4;transition:opacity .2s}
+.chapter-toolbar{display:flex;gap:4px;justify-content:flex-end;margin-bottom:8px;opacity:.7;transition:opacity .2s}
 .chapter:hover .chapter-toolbar{opacity:1}
 .story-chapters .chapter p{text-indent:2em;margin-bottom:10px;line-height:2.1;color:var(--text);font-family:var(--font-serif);font-size:14.5px;letter-spacing:.3px}
 .story-chapters .dialogue{color:var(--accent);border-left:2px solid var(--accent-border);padding-left:14px;margin:12px 0;font-style:italic;text-indent:0;font-family:var(--font-serif)}
@@ -463,7 +463,7 @@ textarea.input{resize:vertical;min-height:36px}
 
 /* ========== 响应式 ========== */
 @media(max-width:768px){
-    :root{--sidebar-w:170px;--quickstart-w:200px;--chapter-nav-w:180px}
+    :root{--sidebar-w:170px;--quickstart-w:240px;--chapter-nav-w:180px}
     .sidebar-nav-brand{padding:12px;font-size:16px}
     .story-chapters{padding:20px 24px}
     .compose-row{flex-direction:column}
