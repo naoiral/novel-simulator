@@ -1,6 +1,9 @@
 /* ========== 写作页 ========== */
+let _currentChapterNum = null;  // 当前选中的章节号
+
 async function loadStoryPage() {
     if (!S.storyId) return;
+    _currentChapterNum = null;
     try {
         const story = await api(`/api/stories/${S.storyId}`);
         $("story-reading-title").textContent = story.title;
@@ -29,89 +32,111 @@ async function loadStoryPage() {
     } catch (e) { toast("加载失败: " + e.message, "error"); }
 }
 
-let chapterPage = 1;
-let chapterHasMore = false;
-let chapterTotal = 0;
-
-async function loadChapters(reset = true) {
+// 加载章节列表（升序）并默认选中第1章
+async function loadChapters() {
     try {
-        if (reset) chapterPage = 1;
-        const d = await api(`/api/stories/${S.storyId}/chapters?page=${chapterPage}&per_page=20`);
-        const c = $("story-content");
+        const d = await api(`/api/stories/${S.storyId}/chapters?per_page=999`);
         const nav = $("chapter-nav-list");
-        chapterHasMore = d.has_more;
-        chapterTotal = d.total;
+        const badge = $("chapter-count-badge");
 
         if (!d.chapters || !d.chapters.length) {
-            c.innerHTML = '<div class="empty-state"><p>还没有章节</p><p class="hint">在下方输入指令，点「写下一章」开始</p></div>';
             if (nav) nav.innerHTML = '';
+            if (badge) badge.textContent = "";
+            $("chapter-title-input").value = "";
+            $("chapter-editor").value = "";
+            $("chapter-editor").placeholder = "还没有章节，点上方「+ 新章节」创建第一个章节";
+            $("btn-delete-chapter").style.display = "none";
+            _currentChapterNum = null;
             return;
         }
 
-        const chaptersHtml = d.chapters.map(ch => `<div class="chapter" id="chapter-${ch.num}">
-            <div class="chapter-toolbar">
-                <button class="btn btn-ghost btn-sm" onclick="rewriteChapter(${ch.num})" title="重写本章">重写</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteChapter(${ch.num})" title="删除本章">删除</button>
-            </div>
-            ${renderMD(ch.content)}
-        </div>`).join("");
-
-        if (reset) {
-            c.innerHTML = (d.has_more ? `<div id="load-more-chapters" style="text-align:center;padding:16px"><button class="btn btn-ghost btn-sm" onclick="loadMoreChapters()">加载更早的章节</button></div>` : "") + chaptersHtml;
-        } else {
-            // 追加到已有内容前面（更早的章节）
-            const loadMore = $("load-more-chapters");
-            if (loadMore) loadMore.insertAdjacentHTML("afterend", chaptersHtml);
-            else c.insertAdjacentHTML("afterbegin", chaptersHtml);
-            // 更新"加载更多"按钮
-            if (!d.has_more && loadMore) loadMore.remove();
+        // 章节导航（升序排列：第1章在最上面）
+        if (nav) {
+            nav.innerHTML = d.chapters.map(ch =>
+                `<div class="chapter-nav-item ${ch.num === _currentChapterNum ? 'active' : ''}"
+                      data-num="${ch.num}"
+                      onclick="selectChapter(${ch.num})"
+                      draggable="true"
+                      ondragstart="onChapterDragStart(event)"
+                      ondragover="onChapterDragOver(event)"
+                      ondrop="onChapterDrop(event)">
+                    第${ch.num}章 ${esc(ch.title || '')}
+                </div>`
+            ).join('');
         }
+        if (badge) badge.textContent = `(${d.total})`;
 
-        // 更新章节导航（全量，支持拖拽）
-        if (reset && nav) {
-            const navHtml = [];
-            for (let i = d.total; i >= 1; i--) {
-                navHtml.push(`<div class="chapter-nav-item" draggable="true" data-num="${i}" ondragstart="onChapterDragStart(event)" ondragover="onChapterDragOver(event)" ondrop="onChapterDrop(event)">第${i}章</div>`);
-            }
-            nav.innerHTML = navHtml.join('');
+        // 默认选中：当前章节 or 第1章
+        if (!_currentChapterNum || !d.chapters.find(ch => ch.num === _currentChapterNum)) {
+            _currentChapterNum = d.chapters[0].num;
         }
-        // 更新章节数量
-        const badge = $("chapter-count-badge");
-        if (badge) badge.textContent = d.total > 0 ? `(${d.total})` : "";
+        await selectChapter(_currentChapterNum);
     } catch (e) { toast("加载章节失败: " + e.message, "error"); }
 }
 
-function loadMoreChapters() {
-    chapterPage++;
-    loadChapters(false);
-}
-
-// 手写章节
-function openManualWrite() {
-    $("manual-title").value = "";
-    $("manual-content").value = "";
-    openModal("manual-write-modal");
-    setTimeout(() => $("manual-title").focus(), 100);
-}
-
-async function saveManualChapter() {
-    const title = $("manual-title").value.trim();
-    const content = $("manual-content").value.trim();
-    if (!content) return toast("请输入章节内容", "error");
+// 选中章节并加载内容到编辑器
+async function selectChapter(num) {
+    _currentChapterNum = num;
+    // 更新导航高亮
+    document.querySelectorAll(".chapter-nav-item").forEach(el => {
+        el.classList.toggle("active", parseInt(el.dataset.num) === num);
+    });
+    // 加载章节内容到编辑器
     try {
-        const result = await api(`/api/stories/${S.storyId}/chapters/manual`, {
+        const d = await api(`/api/stories/${S.storyId}/chapters?per_page=999`);
+        const ch = d.chapters.find(c => c.num === num);
+        if (ch) {
+            $("chapter-title-input").value = ch.title || "";
+            $("chapter-editor").value = ch.content || "";
+            $("chapter-editor").placeholder = "在这里写你的章节内容...";
+            $("btn-delete-chapter").style.display = "";
+        }
+    } catch (e) { toast("加载章节失败: " + e.message, "error"); }
+}
+
+// 创建新章节
+async function createNewChapter() {
+    try {
+        const d = await api(`/api/stories/${S.storyId}/chapters?per_page=999`);
+        const nextNum = (d.total || 0) + 1;
+        // 创建空章节
+        await api(`/api/stories/${S.storyId}/chapters/manual`, {
             method: "POST",
+            body: JSON.stringify({ title: `第${nextNum}章`, content: "" })
+        });
+        await loadChapters();
+        await selectChapter(nextNum);
+        $("chapter-editor").focus();
+        toast(`第${nextNum}章已创建，开始写作`, "success");
+    } catch (e) { toast("创建失败: " + e.message, "error"); }
+}
+
+// 保存当前选中章节
+async function saveChapter() {
+    if (!_currentChapterNum) return toast("请先选中或创建一个章节", "error");
+    const title = $("chapter-title-input").value.trim();
+    const content = $("chapter-editor").value;
+    try {
+        await api(`/api/stories/${S.storyId}/chapters/${_currentChapterNum}`, {
+            method: "PUT",
             body: JSON.stringify({ title, content })
         });
-        if (result.error) toast("保存失败: " + result.error, "error");
-        else {
-            toast(`第${result.chapter_num}章已保存`, "success");
-            closeModal("manual-write-modal");
-            await loadChapters();
-            const chapters = document.querySelectorAll(".chapter");
-            if (chapters.length) chapters[chapters.length - 1].scrollIntoView({ behavior: "smooth" });
-        }
+        toast(`第${_currentChapterNum}章已保存`, "success");
+        // 刷新导航（标题可能变了）
+        await loadChapters();
     } catch (e) { toast("保存失败: " + e.message, "error"); }
+}
+
+// 删除当前选中章节
+async function deleteCurrentChapter() {
+    if (!_currentChapterNum) return;
+    if (!confirm(`确定删除第${_currentChapterNum}章？此操作不可撤销。`)) return;
+    try {
+        await api(`/api/stories/${S.storyId}/chapters/${_currentChapterNum}`, { method: "DELETE" });
+        toast(`第${_currentChapterNum}章已删除`, "success");
+        _currentChapterNum = null;
+        await loadChapters();
+    } catch (e) { toast("删除失败: " + e.message, "error"); }
 }
 
 // 章节拖拽排序
@@ -162,41 +187,6 @@ async function onChapterDrop(e) {
     _dragChapterNum = null;
 }
 
-function scrollToChapter(num) {
-    const el = document.getElementById(`chapter-${num}`);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-function toggleChapterNav() {
-    $("chapter-nav").classList.toggle("collapsed");
-}
-
-async function deleteChapter(num) {
-    if (!confirm(`确定删除第${num}章？此操作不可撤销。`)) return;
-    try {
-        await api(`/api/stories/${S.storyId}/chapters/${num}`, { method: "DELETE" });
-        toast(`第${num}章已删除`, "success");
-        await loadChapters();
-    } catch (e) { toast("删除失败: " + e.message, "error"); }
-}
-
-async function rewriteChapter(num) {
-    if (!confirm(`确定重写第${num}章？当前内容将被覆盖。`)) return;
-    const btn = event.target;
-    btn.disabled = true;
-    showLoading("AI 正在重写...");
-    try {
-        const result = await api(`/api/stories/${S.storyId}/advance`, {
-            method: "POST", body: JSON.stringify({ instruction: `重写第${num}章，保持剧情连贯但换一种写法` })
-        });
-        if (result.error) toast("失败: " + result.error, "error");
-        else {
-            toast(`重写完成：第${result.chapter_num}章「${result.chapter_title}」`, "success");
-            await loadChapters();
-        }
-    } catch (e) { toast("失败: " + e.message, "error"); }
-    btn.disabled = false; hideLoading();
-}
 
 let _advanceCancelled = false;
 

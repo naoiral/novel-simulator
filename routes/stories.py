@@ -112,7 +112,7 @@ def get_chapters(story_id):
     all_nums = engine.memory._list_chapters()
     total = len(all_nums)
     page = request.args.get("page", 1, type=int)
-    per_page = min(request.args.get("per_page", 20, type=int), 100)
+    per_page = min(request.args.get("per_page", 20, type=int), 999)
     start = (page - 1) * per_page
     end = start + per_page
     page_nums = all_nums[start:end]
@@ -120,9 +120,21 @@ def get_chapters(story_id):
     for num in page_nums:
         content = engine.memory.load_chapter(num)
         meta = engine.memory.load_chapter_meta(num)
-        if content:
+        if content is not None:
             chapters.append({"num": num, "content": content, "title": meta.get("title", "") if meta else "", "word_count": meta.get("word_count", 0) if meta else 0})
     return jsonify({"chapters": chapters, "total": total, "page": page, "per_page": per_page, "has_more": end < total})
+
+
+@stories_bp.route("/api/stories/<story_id>/chapters/<int:chapter_num>", methods=["PUT"])
+def update_chapter(story_id, chapter_num):
+    """更新指定章节的标题和内容。"""
+    data = request.json
+    title = data.get("title", "")
+    content = data.get("content", "")
+    engine = _get_engine(story_id)
+    engine.memory.save_chapter(chapter_num, content, title)
+    logger.info("更新章节: 故事%s 第%s章", story_id, chapter_num)
+    return jsonify({"ok": True})
 
 
 @stories_bp.route("/api/stories/<story_id>/chapters/<int:chapter_num>", methods=["DELETE"])

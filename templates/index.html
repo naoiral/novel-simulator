@@ -266,45 +266,36 @@
                         <div class="chapter-nav" id="chapter-nav">
                             <div class="chapter-nav-header">
                                 <span>📖 章节 <span id="chapter-count-badge" style="font-size:11px;color:var(--text3);margin-left:4px"></span></span>
+                                <button class="btn btn-ghost btn-sm" onclick="createNewChapter()" style="padding:2px 6px;font-size:11px">+ 新章节</button>
                             </div>
                             <div class="chapter-nav-list" id="chapter-nav-list"></div>
                         </div>
-                        <!-- 章节内容 -->
-                        <div id="story-content" class="story-chapters">
-                            <div class="empty-state">
-                                <p style="font-size:32px;margin-bottom:12px">✍️</p>
-                                <p>还没有章节</p>
-                                <p class="hint">在下方输入框写一句话指示，点「写下一章」AI 自动生成</p>
-                                <p class="hint">例如：让主角在一个雨夜醒来，发现自己穿越到了古代</p>
+                        <!-- 编辑器主区域 -->
+                        <div class="editor-main" id="editor-main">
+                            <div class="editor-header">
+                                <input type="text" id="chapter-title-input" class="input" placeholder="章节标题" style="font-weight:600;font-size:15px;border:none;background:transparent;padding:0;flex:1">
+                                <div class="editor-header-actions">
+                                    <button onclick="deleteCurrentChapter()" class="btn btn-danger btn-sm" id="btn-delete-chapter" style="display:none">删除本章</button>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-
-                    <!-- 创作区：手写为主 + AI辅助 -->
-                    <div class="story-compose">
-                        <!-- 章节标题 -->
-                        <input type="text" id="chapter-title-input" class="input" placeholder="章节标题（可选）" style="margin-bottom:8px;font-weight:500">
-                        <!-- 手写编辑器 -->
-                        <textarea id="chapter-editor" class="chapter-editor" placeholder="在这里写你的章节内容...&#10;&#10;写完后点「保存章节」，也可以让 AI 帮你生成草稿。"></textarea>
-                        <!-- 操作栏 -->
-                        <div class="compose-actions">
-                            <button onclick="saveChapter()" class="btn-write">保存章节</button>
-                            <div class="compose-divider"></div>
-                            <button onclick="aiGenerateDraft()" id="btn-ai-draft" class="btn btn-ghost">AI 生成草稿</button>
-                            <div class="quick-tags-toggle" onclick="toggleQuickTags()" style="margin:0;font-size:12px">
-                                <span class="toggle-arrow" id="quick-tags-arrow">▶</span> 快捷指令
+                            <textarea id="chapter-editor" class="chapter-editor" placeholder="在这里写你的章节内容...&#10;&#10;选中左侧章节可编辑已有内容，点「+ 新章节」创建新章节。"></textarea>
+                            <div class="compose-actions">
+                                <button onclick="saveChapter()" class="btn-write">保存章节</button>
+                                <div class="compose-divider"></div>
+                                <button onclick="aiGenerateDraft()" id="btn-ai-draft" class="btn btn-ghost">AI 生成草稿</button>
+                                <div class="quick-tags-toggle" onclick="toggleQuickTags()" style="margin:0;font-size:12px">
+                                    <span class="toggle-arrow" id="quick-tags-arrow">▶</span> 快捷指令
+                                </div>
                             </div>
-                        </div>
-                        <!-- 快捷指令 -->
-                        <div class="quick-tags" id="quick-tags">
-                            <span class="cmd-tag" onclick="fillEditor('让主角陷入危机')">主角危机</span>
-                            <span class="cmd-tag" onclick="fillEditor('触发人物冲突')">人物冲突</span>
-                            <span class="cmd-tag" onclick="fillEditor('推进日常剧情')">日常推进</span>
-                            <span class="cmd-tag" onclick="fillEditor('增加感情戏')">感情戏</span>
-                            <span class="cmd-tag" onclick="fillEditor('触发奇遇')">奇遇</span>
-                            <span class="cmd-tag" onclick="fillEditor('推进主线')">推进主线</span>
-                        </div>
-                        <!-- AI 草稿预览区（生成后显示） -->
+                            <div class="quick-tags" id="quick-tags">
+                                <span class="cmd-tag" onclick="fillEditor('让主角陷入危机')">主角危机</span>
+                                <span class="cmd-tag" onclick="fillEditor('触发人物冲突')">人物冲突</span>
+                                <span class="cmd-tag" onclick="fillEditor('推进日常剧情')">日常推进</span>
+                                <span class="cmd-tag" onclick="fillEditor('增加感情戏')">感情戏</span>
+                                <span class="cmd-tag" onclick="fillEditor('触发奇遇')">奇遇</span>
+                                <span class="cmd-tag" onclick="fillEditor('推进主线')">推进主线</span>
+                            </div>
+                            <!-- AI 草稿预览区 -->
                         <div id="ai-draft-panel" class="ai-draft-panel hidden">
                             <div class="ai-draft-header">
                                 <span>AI 草稿预览</span>
